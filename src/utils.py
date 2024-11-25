@@ -75,8 +75,7 @@ def scroll_slow(
                 position += step
 
                 step = max(10, abs(step) - 10) * (-1 if reverse else 1)
-                time.sleep(random.uniform(0.6, 1.5))
-
+                time.sleep(random.uniform(0.2, 0.5))
             driver.execute_script(script_scroll_to, scrollable_element, end)
             time.sleep(0.5)
         else:

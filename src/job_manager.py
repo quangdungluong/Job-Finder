@@ -14,6 +14,7 @@ from selenium.webdriver.remote.webelement import WebElement
 
 from src.job import Job
 from src.utils import scroll_slow
+from tqdm import tqdm
 
 
 class JobManager:
@@ -22,7 +23,7 @@ class JobManager:
 
     def collecting_data(self):
         location = "Vietnam"
-        position = "machine learning engineer"
+        position = "ai engineer"
         location_url = "&location=" + location
         job_page_number = -1
         job_list: List[Job] = []
@@ -31,12 +32,14 @@ class JobManager:
                 job_page_number += 1
                 self.next_job_page(position, location_url, job_page_number)
                 print("Starting the collecting process for this page.")
+                time.sleep(2)
                 job_list.extend(self.read_jobs())
         except Exception as e:
             print(e)
             pass
 
-        for job in job_list:
+        print(f"Number of extracted jobs: {len(job_list)}")
+        for job in tqdm(job_list):
             try:
                 if job.link == "":
                     continue
@@ -63,15 +66,19 @@ class JobManager:
         except NoSuchElementException:
             pass
 
-        job_results = self.driver.find_element(
-            By.CLASS_NAME, "jobs-search-results-list"
-        )
-        scroll_slow(self.driver, job_results)
-        scroll_slow(self.driver, job_results, step=300, reverse=True)
-
-        job_list_elements = self.driver.find_elements(
+        job_container = self.driver.find_element(
             By.CLASS_NAME, "scaffold-layout__list-container"
-        )[0].find_elements(By.CLASS_NAME, "jobs-search-results__list-item")
+        )
+        job_container_scrollableElement = job_container.find_element(By.XPATH, "..")
+        scroll_slow(self.driver, job_container_scrollableElement)
+        scroll_slow(
+            self.driver, job_container_scrollableElement, step=300, reverse=True
+        )
+
+        job_list_elements = job_container.find_elements(
+            By.CSS_SELECTOR, "div[data-job-id]"
+        )
+        print(len(job_list_elements))
         if not job_list_elements:
             raise Exception("No job class elements found on page.")
 
@@ -97,7 +104,7 @@ class JobManager:
             )
 
             company = job_tile.find_element(
-                By.CLASS_NAME, "job-card-container__primary-description"
+                By.CLASS_NAME, "artdeco-entity-lockup__subtitle"
             ).text
         except NoSuchElementException:
             print("Some information is missing")
