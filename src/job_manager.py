@@ -4,51 +4,93 @@ import traceback
 import urllib
 import urllib.parse
 from pathlib import Path
-from typing import List
+from typing import Dict, List
 
 from selenium import webdriver
 from selenium.common.exceptions import NoSuchElementException
 from selenium.webdriver import ActionChains
 from selenium.webdriver.common.by import By
 from selenium.webdriver.remote.webelement import WebElement
+from tqdm import tqdm
 
 from src.job import Job
 from src.utils import scroll_slow
-from tqdm import tqdm
+from src.models import session, JobListing
+from urllib.parse import urlparse
 
 
 class JobManager:
     def __init__(self, driver: webdriver.Chrome):
         self.driver = driver
 
+    def set_parameters(self, parameters: Dict):
+        print("Setting parameters")
+        self.positions: List = parameters.get("positions", [])
+
     def collecting_data(self):
         location = "Vietnam"
-        position = "ai engineer"
-        location_url = "&location=" + location
-        job_page_number = -1
         job_list: List[Job] = []
-        try:
-            while True:
-                job_page_number += 1
-                self.next_job_page(position, location_url, job_page_number)
-                print("Starting the collecting process for this page.")
-                time.sleep(2)
-                job_list.extend(self.read_jobs())
-        except Exception as e:
-            print(e)
-            pass
+        for position in self.positions:
+            try:
+                location_url = "&location=" + location
+                job_page_number = -1
+                while True:
+                    job_page_number += 1
+                    self.next_job_page(position, location_url, job_page_number)
+                    print("Starting the collecting process for this page.")
+                    time.sleep(2)
+                    job_list.extend(self.read_jobs())
+            except Exception as e:
+                print(e)
+                pass
 
         print(f"Number of extracted jobs: {len(job_list)}")
         for job in tqdm(job_list):
-            try:
-                if job.link == "":
-                    continue
+            self.save_job_to_db(job, description=False)
+
+    def get_job_id(self, job_link: str):
+        parsed_url = urlparse(job_link)
+        path_segments = parsed_url.path.split("/")
+        if "jobs" in path_segments and "view" in path_segments:
+            job_id = path_segments[path_segments.index("view") + 1]
+            return job_id
+        return ""
+
+    def save_job_to_db(self, job: Job, description: bool = False):
+        try:
+            if job.link == "":
+                return
+
+            linkedin_job_id = self.get_job_id(job.link)
+            existing_job = (
+                session.query(JobListing)
+                .filter_by(linkedin_job_id=linkedin_job_id)
+                .first()
+            )
+            if existing_job:
+                return
+
+            if description:
                 job_description = self._get_job_description(job)
                 job.set_job_description(job_description)
-                self.write_to_file(job, "success")
+
+            job_listing = JobListing(
+                linkedin_job_id=linkedin_job_id,
+                title=job.title,
+                description=job.description,
+                location=job.location,
+                company=job.company,
+                url=job.link,
+            )
+            session.add(job_listing)
+            try:
+                session.commit()
             except Exception as e:
-                self.write_to_file(job, "failed")
-                continue
+                session.rollback()
+                print(f"Error saving job: {e}")
+        except Exception as e:
+            self.write_to_file(job, "failed")
+            return
 
     def next_job_page(self, position, location, job_page):
         encoded_position = urllib.parse.quote(position)
