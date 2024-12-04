@@ -72,6 +72,7 @@ def main():
         job_manager = JobManager(browser)
         job_manager.set_parameters(parameters)
         job_manager.collecting_data()
+        job_manager.retrieve_job_description()
     except Exception as e:
         print(f"An unexpected error occurred: {e}")
 
