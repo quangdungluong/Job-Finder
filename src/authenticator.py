@@ -66,7 +66,6 @@ class Authenticator(ABC):
 
 
 class LinkedInAuthenticator(Authenticator):
-
     @property
     def home_url(self):
         return "https://www.linkedin.com"

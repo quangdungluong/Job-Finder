@@ -1,13 +1,13 @@
+from pathlib import Path
+
+import yaml
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service as ChromeService
 from webdriver_manager.chrome import ChromeDriverManager
 
-
 from src.authenticator import LinkedInAuthenticator
 from src.job_manager import JobManager
 from src.utils import chrome_browser_options
-from pathlib import Path
-import yaml
 
 
 class ConfigError(Exception):
