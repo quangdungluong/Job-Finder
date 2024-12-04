@@ -4,6 +4,8 @@ import time
 from selenium import webdriver
 from selenium.webdriver.remote.webelement import WebElement
 
+from src.logger import logger
+
 
 def chrome_browser_options():
     options = webdriver.ChromeOptions()
@@ -69,7 +71,7 @@ def scroll_slow(
                         script_scroll_to, scrollable_element, position
                     )
                 except Exception as e:
-                    print(e)
+                    logger.error(e)
 
                 previous_position = position
                 position += step
@@ -79,6 +81,6 @@ def scroll_slow(
             driver.execute_script(script_scroll_to, scrollable_element, end)
             time.sleep(0.5)
         else:
-            print("The element is not visible.")
+            logger.warning("The element is not visible.")
     except Exception as e:
-        print(e)
+        logger.error(e)

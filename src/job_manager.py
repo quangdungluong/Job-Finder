@@ -5,18 +5,21 @@ import urllib
 import urllib.parse
 from pathlib import Path
 from typing import Dict, List
+from urllib.parse import urlparse
 
 from selenium import webdriver
 from selenium.common.exceptions import NoSuchElementException
 from selenium.webdriver import ActionChains
 from selenium.webdriver.common.by import By
 from selenium.webdriver.remote.webelement import WebElement
+from sqlalchemy import select, update
+from sqlalchemy.exc import SQLAlchemyError
 from tqdm import tqdm
 
 from src.job import Job
+from src.logger import logger
+from src.models import JobListing, session
 from src.utils import scroll_slow
-from src.models import session, JobListing
-from urllib.parse import urlparse
 
 
 class JobManager:
@@ -24,8 +27,11 @@ class JobManager:
         self.driver = driver
 
     def set_parameters(self, parameters: Dict):
-        print("Setting parameters")
+        logger.info("Setting parameters")
         self.positions: List = parameters.get("positions", [])
+
+    def retrieve_job_description(self):
+        pass
 
     def collecting_data(self):
         location = "Vietnam"
@@ -37,14 +43,15 @@ class JobManager:
                 while True:
                     job_page_number += 1
                     self.next_job_page(position, location_url, job_page_number)
-                    print("Starting the collecting process for this page.")
+                    logger.info("Starting the collecting process for this page.")
                     time.sleep(2)
                     job_list.extend(self.read_jobs())
+                    break
             except Exception as e:
-                print(e)
+                logger.error(e)
                 pass
 
-        print(f"Number of extracted jobs: {len(job_list)}")
+        logger.info(f"Number of extracted jobs: {len(job_list)}")
         for job in tqdm(job_list):
             self.save_job_to_db(job, description=False)
 
@@ -87,7 +94,7 @@ class JobManager:
                 session.commit()
             except Exception as e:
                 session.rollback()
-                print(f"Error saving job: {e}")
+                logger.error(f"Error saving job: {e}")
         except Exception as e:
             self.write_to_file(job, "failed")
             return
@@ -95,10 +102,10 @@ class JobManager:
     def next_job_page(self, position, location, job_page):
         encoded_position = urllib.parse.quote(position)
         url = f"https://www.linkedin.com/jobs/search/?keywords={encoded_position}{location}&start={job_page*25}"
-        print(url)
+        logger.info(f"Current Job Page: {url}")
         self.driver.get(url)
 
-    def read_jobs(self):
+    def read_jobs(self, is_scroll=False):
         try:
             no_jobs_element = self.driver.find_element(
                 By.CLASS_NAME, "jobs-search-two-pane__no-results-banner--expand"
@@ -108,62 +115,89 @@ class JobManager:
         except NoSuchElementException:
             pass
 
-        job_container = self.driver.find_element(
-            By.CLASS_NAME, "scaffold-layout__list-container"
+        # XPath query to find the ul tag with class scaffold-layout__list-container
+        jobs_xpath_query = (
+            "//ul[contains(@class, 'KbeVKAtfcvWythFwqNUiKkMeqTdhZIlEFOBug')]"
         )
-        job_container_scrollableElement = job_container.find_element(By.XPATH, "..")
-        scroll_slow(self.driver, job_container_scrollableElement)
-        scroll_slow(
-            self.driver, job_container_scrollableElement, step=300, reverse=True
-        )
+        jobs_container = self.driver.find_element(By.XPATH, jobs_xpath_query)
+        jobs_container_scrollableElement = jobs_container.find_element(By.XPATH, "..")
 
-        job_list_elements = job_container.find_elements(
-            By.CSS_SELECTOR, "div[data-job-id]"
+        if is_scroll:
+            scroll_slow(self.driver, jobs_container_scrollableElement)
+            scroll_slow(
+                self.driver, jobs_container_scrollableElement, step=300, reverse=True
+            )
+
+        job_list_elements = jobs_container_scrollableElement.find_elements(
+            By.XPATH,
+            ".//li[contains(@class, 'scaffold-layout__list-item') and contains(@class, 'ember-view')]",
         )
-        print(len(job_list_elements))
         if not job_list_elements:
             raise Exception("No job class elements found on page.")
+        logger.info(f"Number of job in this page: {len(job_list_elements)}")
 
         job_list = [
-            Job(*self.extract_job_information_from_tile(job_element))
+            self.extract_job_information_from_tile(job_element)
             for job_element in job_list_elements
         ]
         return job_list
 
     def extract_job_information_from_tile(self, job_tile: WebElement):
-        job_title, company, job_location, link = "", "", "", ""
+        job = Job()
         try:
-            job_title = (
-                job_tile.find_element(By.CLASS_NAME, "job-card-list__title")
+            job.title = (
+                job_tile.find_element(
+                    By.XPATH,
+                    ".//div[contains(@class, 'artdeco-entity-lockup__title')]//span",
+                )
                 .find_element(By.TAG_NAME, "strong")
                 .text
             )
+            logger.info(job.title)
+        except NoSuchElementException:
+            logger.warning("Job title is missing.")
 
-            link = (
-                job_tile.find_element(By.CLASS_NAME, "job-card-list__title")
+        try:
+            job.link = (
+                job_tile.find_element(
+                    By.XPATH,
+                    ".//div[contains(@class, 'artdeco-entity-lockup__title')]",
+                )
+                .find_element(
+                    By.XPATH, ".//a[contains(@class, 'job-card-list__title--link')]"
+                )
                 .get_attribute("href")
                 .split("?")[0]
             )
-
-            company = job_tile.find_element(
-                By.CLASS_NAME, "artdeco-entity-lockup__subtitle"
-            ).text
+            logger.info(job.link)
         except NoSuchElementException:
-            print("Some information is missing")
+            logger.warning("Job link is missing.")
+
         try:
-            job_location = job_tile.find_element(
-                By.CLASS_NAME, "job-card-container__metadata-item"
+            job.company = job_tile.find_element(
+                By.XPATH,
+                ".//div[contains(@class, 'artdeco-entity-lockup__subtitle')]//span",
             ).text
+            logger.info(job.company)
         except NoSuchElementException:
-            print("Job location is missing")
+            logger.warning("Job company is missing.")
 
-        return job_title, company, job_location, link
+        try:
+            job.location = job_tile.find_element(
+                By.XPATH,
+                ".//div[contains(@class, 'artdeco-entity-lockup__caption')]//span",
+            ).text
+            logger.info(job.location)
+        except NoSuchElementException:
+            logger.warning("Job location is missing")
+
+        return job
 
     def _get_job_description(self, job: Job) -> str:
         try:
             self.driver.get(job.link)
         except Exception as e:
-            print(e)
+            logger.error(e)
             raise
 
         try:
@@ -175,11 +209,12 @@ class JobManager:
                 actions.move_to_element(see_more_button).click().perform()
                 time.sleep(2)
             except NoSuchElementException:
-                print("See more button not found, skipping.")
+                logger.warning("See more button not found, skipping.")
+                return
 
             try:
                 description = self.driver.find_element(
-                    By.CLASS_NAME, "jobs-description-content__text"
+                    By.CLASS_NAME, "jobs-description-content__text--stretch"
                 ).get_property("innerText")
             except NoSuchElementException:
                 description = self.driver.find_element(
@@ -191,7 +226,9 @@ class JobManager:
             raise Exception(f"Job Description not found:\nTraceback:\n{tb_str}")
         except Exception:
             tb_str = traceback.format_exc()
-            raise Exception(f"Error getting Job Description:\nTraceback:\b{tb_str}")
+            # raise Exception(f"Error getting Job Description:\nTraceback:\b{tb_str}")
+            logger.error(f"Error getting Job Description:\nTraceback:\b{tb_str}")
+            pass
 
     def write_to_file(self, job: Job, file_name: str):
         data = {

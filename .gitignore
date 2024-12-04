@@ -7,3 +7,4 @@ assets/database.db
 package.json
 package-lock.json
 node_modules
+*.log

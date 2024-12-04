@@ -7,6 +7,7 @@ from webdriver_manager.chrome import ChromeDriverManager
 
 from src.authenticator import LinkedInAuthenticator
 from src.job_manager import JobManager
+from src.logger import logger
 from src.utils import chrome_browser_options
 
 
@@ -64,7 +65,7 @@ def main():
     try:
         config_file = "./configs/work_preferences.yaml"
         parameters = ConfigValidator.validate_config(config_file)
-        print(parameters)
+        logger.info(parameters)
         browser = init_browser()
         login_component = LinkedInAuthenticator(driver=browser)
         # Start login
@@ -74,7 +75,7 @@ def main():
         job_manager.collecting_data()
         job_manager.retrieve_job_description()
     except Exception as e:
-        print(f"An unexpected error occurred: {e}")
+        logger.error(f"An unexpected error occurred: {e}")
 
 
 if __name__ == "__main__":

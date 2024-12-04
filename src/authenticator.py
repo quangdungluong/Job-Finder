@@ -7,6 +7,8 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.wait import WebDriverWait
 
+from src.logger import logger
+
 
 class Authenticator(ABC):
     @property
@@ -29,7 +31,7 @@ class Authenticator(ABC):
             self.navigate_to_login()
             self.prompt_for_credentials()
         except Exception as e:
-            print(e)
+            logger.error(e)
         self.handle_security_checks()
 
     def prompt_for_credentials(self):
@@ -39,7 +41,7 @@ class Authenticator(ABC):
                 current_window = self.driver.current_window_handle
                 self.driver.switch_to.window(current_window)
                 if self.is_logged_in:
-                    print("Login successful, redirected to feed page")
+                    logger.info("Login successful, redirected to feed page")
                     break
                 else:
                     WebDriverWait(self.driver, 10).until(
@@ -49,7 +51,7 @@ class Authenticator(ABC):
                 time.sleep(check_interval)
 
         except TimeoutException:
-            print("Login form not found. Aborting login.")
+            logger.error("Login form not found. Aborting login.")
 
     @abstractmethod
     def handle_security_checks(self):
@@ -58,10 +60,10 @@ class Authenticator(ABC):
     def start(self):
         self.driver.get(self.home_url)
         if self.is_logged_in:
-            print("Skip login process.")
+            logger.info("Skip login process.")
             return
         else:
-            print("Proceeding with login")
+            logger.info("Proceeding with login")
             self.handle_login()
 
 
@@ -82,7 +84,7 @@ class LinkedInAuthenticator(Authenticator):
                 EC.url_contains("https://linkedin.com/feed")
             )
         except TimeoutException:
-            print("Please try again later.")
+            logger.error("Please try again later.")
 
     @property
     def is_logged_in(self):
