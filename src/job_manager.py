@@ -31,7 +31,16 @@ class JobManager:
         self.positions: List = parameters.get("positions", [])
 
     def retrieve_job_description(self):
-        pass
+        job_records = session.query(JobListing).filter_by(description="").all()
+        for job_record in tqdm(job_records):
+            job = Job(link=job_record.url)
+            job_description = self._get_job_description(job)
+            try:
+                job_record.description = job_description
+                session.commit()
+            except Exception as e:
+                logger.error(e)
+                session.rollback()
 
     def collecting_data(self):
         location = "Vietnam"
@@ -45,8 +54,7 @@ class JobManager:
                     self.next_job_page(position, location_url, job_page_number)
                     logger.info("Starting the collecting process for this page.")
                     time.sleep(2)
-                    job_list.extend(self.read_jobs())
-                    break
+                    job_list.extend(self.read_jobs(is_scroll=True))
             except Exception as e:
                 logger.error(e)
                 pass
@@ -101,7 +109,7 @@ class JobManager:
 
     def next_job_page(self, position, location, job_page):
         encoded_position = urllib.parse.quote(position)
-        url = f"https://www.linkedin.com/jobs/search/?keywords={encoded_position}{location}&start={job_page*25}"
+        url = f"https://www.linkedin.com/jobs/search/?f_TPR=r2592000&keywords={encoded_position}{location}&start={job_page*25}"
         logger.info(f"Current Job Page: {url}")
         self.driver.get(url)
 
@@ -115,12 +123,12 @@ class JobManager:
         except NoSuchElementException:
             pass
 
-        # XPath query to find the ul tag with class scaffold-layout__list-container
-        jobs_xpath_query = (
-            "//ul[contains(@class, 'KbeVKAtfcvWythFwqNUiKkMeqTdhZIlEFOBug')]"
+        # XPath query to find the div tag with class jobs-search-results-list__pagination
+        pagination_xpath_query = (
+            "//div[contains(@class, 'jobs-search-results-list__pagination')]"
         )
-        jobs_container = self.driver.find_element(By.XPATH, jobs_xpath_query)
-        jobs_container_scrollableElement = jobs_container.find_element(By.XPATH, "..")
+        jobs_pagination = self.driver.find_element(By.XPATH, pagination_xpath_query)
+        jobs_container_scrollableElement = jobs_pagination.find_element(By.XPATH, "..")
 
         if is_scroll:
             scroll_slow(self.driver, jobs_container_scrollableElement)
@@ -128,7 +136,10 @@ class JobManager:
                 self.driver, jobs_container_scrollableElement, step=300, reverse=True
             )
 
-        job_list_elements = jobs_container_scrollableElement.find_elements(
+        jobs_container = self.driver.find_element(
+            By.CLASS_NAME, "scaffold-layout__list "
+        )
+        job_list_elements = jobs_container.find_elements(
             By.XPATH,
             ".//li[contains(@class, 'scaffold-layout__list-item') and contains(@class, 'ember-view')]",
         )
