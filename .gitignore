@@ -1,7 +1,7 @@
 __pycache__
 assets/failed.json
 assets/success.json
-assets/database.db
+assets/*.db
 
 .husky
 package.json
