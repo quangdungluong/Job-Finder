@@ -109,7 +109,7 @@ class JobManager:
 
     def next_job_page(self, position, location, job_page):
         encoded_position = urllib.parse.quote(position)
-        url = f"https://www.linkedin.com/jobs/search/?f_TPR=r2592000&keywords={encoded_position}{location}&start={job_page*25}"
+        url = f"https://www.linkedin.com/jobs/search/?f_TPR=r604800&sortBy=DD&keywords={encoded_position}{location}&start={job_page*25}"
         logger.info(f"Current Job Page: {url}")
         self.driver.get(url)
 
