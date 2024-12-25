@@ -3,6 +3,7 @@ import time
 import traceback
 import urllib
 import urllib.parse
+from itertools import product
 from pathlib import Path
 from typing import Dict, List
 from urllib.parse import urlparse
@@ -19,6 +20,7 @@ from tqdm import tqdm
 from src.job import Job
 from src.logger import logger
 from src.models import JobListing, session
+from src.regex_utils import generate_regex_patterns_for_blacklisting
 from src.utils import scroll_slow
 
 
@@ -29,6 +31,31 @@ class JobManager:
     def set_parameters(self, parameters: Dict):
         logger.info("Setting parameters")
         self.positions: List = parameters.get("positions", [])
+        self.locations: List = parameters.get("locations", [])
+        self.title_blacklist: List = parameters.get("title_blacklist", [])
+        self.base_search_url = self.get_base_search_url(parameters)
+
+        self.title_blacklist_patterns = generate_regex_patterns_for_blacklisting(
+            self.title_blacklist
+        )
+
+    def get_base_search_url(self, parameters: Dict):
+        url_parts = []
+        # Sort by date
+        url_parts.append("sortBy=DD")
+        date_mapping = {
+            "all_time": "",
+            "month": "&f_TPR=r2592000",
+            "week": "&f_TPR=r604800",
+            "24_hours": "&f_TPR=r86400",
+        }
+        date_param = next(
+            (v for k, v in date_mapping.items() if parameters.get("date", {}).get(k)),
+            "",
+        )
+        base_url = "&".join(url_parts)
+        full_url = f"?{base_url}{date_param}"
+        return full_url
 
     def retrieve_job_description(self):
         job_records = session.query(JobListing).filter_by(description="").all()
@@ -43,9 +70,9 @@ class JobManager:
                 session.rollback()
 
     def collecting_data(self):
-        location = "Vietnam"
+        searches = list(product(self.positions, self.locations))
         job_list: List[Job] = []
-        for position in self.positions:
+        for position, location in searches:
             try:
                 location_url = "&location=" + location
                 job_page_number = -1
@@ -109,7 +136,7 @@ class JobManager:
 
     def next_job_page(self, position, location, job_page):
         encoded_position = urllib.parse.quote(position)
-        url = f"https://www.linkedin.com/jobs/search/?f_TPR=r604800&sortBy=DD&keywords={encoded_position}{location}&start={job_page*25}"
+        url = f"https://www.linkedin.com/jobs/search/{self.base_search_url}&keywords={encoded_position}{location}&start={job_page*25}"
         logger.info(f"Current Job Page: {url}")
         self.driver.get(url)
 
@@ -132,9 +159,10 @@ class JobManager:
 
         if is_scroll:
             scroll_slow(self.driver, jobs_container_scrollableElement)
-            scroll_slow(
-                self.driver, jobs_container_scrollableElement, step=300, reverse=True
-            )
+            # Disable scroll reverse for faster read jobs
+            # scroll_slow(
+            #     self.driver, jobs_container_scrollableElement, step=300, reverse=True
+            # )
 
         jobs_container = self.driver.find_element(
             By.CLASS_NAME, "scaffold-layout__list "
