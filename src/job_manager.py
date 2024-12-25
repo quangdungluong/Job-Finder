@@ -81,7 +81,6 @@ class JobManager:
                     logger.info("Starting the collecting process for this page.")
                     time.sleep(2)
                     job_list.extend(self.read_jobs(is_scroll=True))
-                    break
             except Exception as e:
                 logger.error(e)
                 pass
