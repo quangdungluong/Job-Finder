@@ -1,4 +1,5 @@
 import json
+import re
 import time
 import traceback
 import urllib
@@ -13,8 +14,6 @@ from selenium.common.exceptions import NoSuchElementException
 from selenium.webdriver import ActionChains
 from selenium.webdriver.common.by import By
 from selenium.webdriver.remote.webelement import WebElement
-from sqlalchemy import select, update
-from sqlalchemy.exc import SQLAlchemyError
 from tqdm import tqdm
 
 from src.job import Job
@@ -82,12 +81,15 @@ class JobManager:
                     logger.info("Starting the collecting process for this page.")
                     time.sleep(2)
                     job_list.extend(self.read_jobs(is_scroll=True))
+                    break
             except Exception as e:
                 logger.error(e)
                 pass
 
         logger.info(f"Number of extracted jobs: {len(job_list)}")
         for job in tqdm(job_list):
+            if self.is_blacklisted(job.title):
+                continue
             self.save_job_to_db(job, description=False)
 
     def get_job_id(self, job_link: str):
@@ -292,3 +294,10 @@ class JobManager:
                 f.seek(0)
                 json.dump(existing_data, f, indent=4)
                 f.truncate()
+
+    def is_blacklisted(self, job_title):
+        is_blacklisted = any(
+            re.search(pattern, job_title, re.IGNORECASE)
+            for pattern in self.title_blacklist_patterns
+        )
+        return is_blacklisted

@@ -4,3 +4,57 @@ positions:
   - Machine Learning Engineer
   - MLOps Engineer
   - Deep Learning Engineer
+
+date:
+  all_time: false
+  month: false
+  week: false
+  24_hours: true
+
+locations:
+  - Vietnam
+
+title_blacklist:
+  - sales
+  - marketing
+  - account
+  - tester
+  - frontend
+  - .net
+  - dotnet
+  - mobile
+  - ios
+  - android
+  - java
+  - react
+  - reactjs
+  - angular
+  - unity
+  - power BI
+  - nodejs
+  - PHP
+  - finance
+  - human resources
+  - editor
+  - flutter
+  - QA
+  - QC
+  - front-end
+  - data engineer
+  - data analyst
+  - vuejs
+  - automation
+  - web
+  - design
+  - designer
+  - front end
+  - game
+  - content
+  - talent acquisition
+  - golang
+  - admin
+  - assistant
+  - business
+  - customer
+  - intern
+  - internship
