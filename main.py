@@ -31,14 +31,22 @@ class ConfigValidator:
         parameters = ConfigValidator.validate_yaml_file(config_yaml_path)
         required_keys = {
             "positions": list,
+            "locations": list,
+            "date": dict,
+            "title_blacklist": list,
         }
 
         for key, expected_type in required_keys.items():
             if key not in parameters:
-                raise ConfigError(
-                    f"Missing or invalid key '{key}' in config file {config_yaml_path}"
-                )
+                if key in ["title_blacklist"]:
+                    parameters[key] = []
+                else:
+                    raise ConfigError(
+                        f"Missing or invalid key '{key}' in config file {config_yaml_path}"
+                    )
             elif not isinstance(parameters[key], expected_type):
+                if key in ["title_blacklist"] and parameters[key] is None:
+                    parameters[key] = []
                 raise ConfigError(
                     f"Invalid type for key '{key}' in config file {config_yaml_path}. Expected {expected_type}."
                 )
@@ -48,7 +56,27 @@ class ConfigValidator:
             raise ConfigError(
                 f"'positions' must be a list of strings in config file {config_yaml_path}"
             )
+        if not all(isinstance(loc, str) for loc in parameters["locations"]):
+            raise ConfigError(
+                f"'locations' must be a list of strings in config file {config_yaml_path}"
+            )
 
+        # Validate date filters
+        date_filters = ["all_time", "month", "week", "24_hours"]
+        for date_filter in date_filters:
+            if not isinstance(parameters["date"].get(date_filter), bool):
+                raise ConfigError(
+                    f"Date filter '{date_filter}' must be a boolean in config file {config_yaml_path}"
+                )
+
+        # Ensure blacklists are lists
+        for blacklist in ["title_blacklist"]:
+            if not isinstance(parameters.get(blacklist), list):
+                raise ConfigError(
+                    f"'{blacklist}' must be a list in config file {config_yaml_path}"
+                )
+            if parameters[blacklist] is None:
+                parameters[blacklist] = []
         return parameters
 
 
