@@ -1,0 +1,13 @@
+positions:
+  - AI Engineer
+
+date:
+  all_time: true
+  month: false
+  week: false
+  24_hours: false
+
+locations:
+  - Vietnam
+
+title_blacklist:
