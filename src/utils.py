@@ -19,7 +19,16 @@ def chrome_browser_options():
     options.add_argument("--disable-gpu")
     options.add_argument("window-size=1200x800")
     options.add_argument("--disable-popup-blocking")
+    options.add_argument("--headless=new")
+    options.add_argument("user-data-dir=Default")
     return options
+
+
+def is_headless(driver: webdriver.Chrome):
+    return (
+        driver.capabilities["goog:chromeOptions"].get("args", []).count("--headless")
+        > 0
+    )
 
 
 def is_scrollable(element: WebElement):

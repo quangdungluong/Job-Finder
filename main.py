@@ -27,6 +27,11 @@ class ConfigValidator:
             raise ConfigError(f"File not found: {yaml_path}")
 
     @staticmethod
+    def validate_secrets(secrets_yaml_path: Path) -> dict:
+        secrets = ConfigValidator.validate_yaml_file(secrets_yaml_path)
+        return secrets
+
+    @staticmethod
     def validate_config(config_yaml_path: Path) -> dict:
         parameters = ConfigValidator.validate_yaml_file(config_yaml_path)
         required_keys = {
@@ -92,12 +97,17 @@ def init_browser() -> webdriver.Chrome:
 def main():
     try:
         config_file = "./configs/work_preferences.yaml"
+        secrets_file = "./configs/secrets.yaml"
         parameters = ConfigValidator.validate_config(config_file)
+        secrets = ConfigValidator.validate_secrets(secrets_file)
         logger.info(parameters)
+        # Init browser
         browser = init_browser()
-        login_component = LinkedInAuthenticator(driver=browser)
         # Start login
+        login_component = LinkedInAuthenticator(driver=browser)
+        login_component.set_secrets(secrets["email"], secrets["password"])
         login_component.start()
+        # Job manager
         job_manager = JobManager(browser)
         job_manager.set_parameters(parameters)
         job_manager.collecting_data()

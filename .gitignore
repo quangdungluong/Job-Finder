@@ -10,3 +10,5 @@ node_modules
 *.log
 
 configs/work_preferences.yaml
+configs/secrets.yaml
+Default
