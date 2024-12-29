@@ -303,3 +303,31 @@ class JobManager:
             for pattern in self.title_blacklist_patterns
         )
         return is_blacklisted
+
+    def is_expired(self, job: Job):
+        try:
+            self.driver.get(job.link)
+        except Exception as e:
+            logger.error(e)
+            logger.info("Job Link is no longer available")
+            return True
+
+        try:
+            feedback_message = self.driver.find_element(
+                By.CLASS_NAME, "artdeco-inline-feedback__message"
+            )
+            logger.info("No longer accepting applications")
+            return True
+        except NoSuchElementException:
+            return False
+
+    def validate_job_expirations(self):
+        job_records = session.query(JobListing).filter_by(is_expired=False).all()
+        for job_record in tqdm(job_records):
+            job = Job(link=job_record.url)
+            try:
+                job_record.is_expired = self.is_expired(job)
+                session.commit()
+            except Exception as e:
+                logger.error(e)
+                session.rollback()
