@@ -4,6 +4,7 @@ import time
 import traceback
 import urllib
 import urllib.parse
+from datetime import date
 from itertools import product
 from pathlib import Path
 from typing import Dict, List
@@ -124,6 +125,8 @@ class JobManager:
                 location=job.location,
                 company=job.company,
                 url=job.link,
+                scraped_date=date.today(),
+                is_expired=False,
             )
             session.add(job_listing)
             try:

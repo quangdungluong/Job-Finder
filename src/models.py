@@ -1,4 +1,4 @@
-from sqlalchemy import Column, DateTime, Integer, String, Text, create_engine
+from sqlalchemy import Boolean, Column, Date, Integer, String, Text, create_engine, func
 from sqlalchemy.orm import declarative_base, sessionmaker
 
 Base = declarative_base()
@@ -14,6 +14,8 @@ class JobListing(Base):
     location = Column(String(255))
     company = Column(String(255), nullable=False)
     url = Column(String(500), nullable=False, unique=True)
+    scraped_date = Column(Date(), nullable=True, default=func.current_date())
+    is_expired = Column(Boolean, nullable=True, default=False)
 
 
 # SQLite Database Connection
