@@ -159,7 +159,9 @@ class JobManager:
             "//div[contains(@class, 'jobs-search-results-list__pagination')]"
         )
         jobs_pagination = self.driver.find_element(By.XPATH, pagination_xpath_query)
-        jobs_container_scrollableElement = jobs_pagination.find_element(By.XPATH, "..")
+        jobs_container_scrollableElement = jobs_pagination.find_element(
+            By.XPATH, "../.."
+        )
 
         if is_scroll:
             scroll_slow(self.driver, jobs_container_scrollableElement)
