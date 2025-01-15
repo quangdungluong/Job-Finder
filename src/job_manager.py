@@ -243,7 +243,7 @@ class JobManager:
             self.driver.get(job.link)
         except Exception as e:
             logger.error(e)
-            raise
+            return ""
 
         try:
             try:
