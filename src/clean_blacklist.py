@@ -12,10 +12,18 @@ from src.models import JobListing, session
 from src.regex_utils import generate_regex_patterns_for_blacklisting
 
 
-def is_blacklisted(job_title, title_blacklist_patterns):
+def is_title_blacklisted(job_title, title_blacklist_patterns):
     is_blacklisted = any(
         re.search(pattern, job_title, re.IGNORECASE)
         for pattern in title_blacklist_patterns
+    )
+    return is_blacklisted
+
+
+def is_company_blacklisted(company, company_blacklist_patterns):
+    is_blacklisted = any(
+        re.search(pattern, company, re.IGNORECASE)
+        for pattern in company_blacklist_patterns
     )
     return is_blacklisted
 
@@ -29,10 +37,18 @@ def clean_blacklist():
         title_blacklist_patterns = generate_regex_patterns_for_blacklisting(
             title_blacklist
         )
+        company_blacklist = parameters.get("company_blacklist", [])
+        company_blacklist_patterns = generate_regex_patterns_for_blacklisting(
+            company_blacklist
+        )
         job_records = session.query(JobListing).all()
         logger.info(f"Number of jobs before cleaned: {len(job_records)}")
         for job_record in tqdm(job_records):
-            if not is_blacklisted(job_record.title, title_blacklist_patterns):
+            if not is_title_blacklisted(
+                job_record.title, title_blacklist_patterns
+            ) and not is_company_blacklisted(
+                job_record.company, company_blacklist_patterns
+            ):
                 continue
             session.delete(job_record)
             try:

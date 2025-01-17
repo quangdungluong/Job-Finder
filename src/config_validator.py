@@ -31,18 +31,22 @@ class ConfigValidator:
             "locations": list,
             "date": dict,
             "title_blacklist": list,
+            "company_blacklist": list,
         }
 
         for key, expected_type in required_keys.items():
             if key not in parameters:
-                if key in ["title_blacklist"]:
+                if key in ["title_blacklist", "company_blacklist"]:
                     parameters[key] = []
                 else:
                     raise ConfigError(
                         f"Missing or invalid key '{key}' in config file {config_yaml_path}"
                     )
             elif not isinstance(parameters[key], expected_type):
-                if key in ["title_blacklist"] and parameters[key] is None:
+                if (
+                    key in ["title_blacklist", "company_blacklist"]
+                    and parameters[key] is None
+                ):
                     parameters[key] = []
                 raise ConfigError(
                     f"Invalid type for key '{key}' in config file {config_yaml_path}. Expected {expected_type}."
@@ -59,7 +63,15 @@ class ConfigValidator:
             )
 
         # Validate date filters
-        date_filters = ["all_time", "month", "week", "24_hours"]
+        date_filters = [
+            "all_time",
+            "month",
+            "week",
+            "24_hours",
+            "6_hours",
+            "2_hours",
+            "hour",
+        ]
         for date_filter in date_filters:
             if not isinstance(parameters["date"].get(date_filter), bool):
                 raise ConfigError(
@@ -67,7 +79,7 @@ class ConfigValidator:
                 )
 
         # Ensure blacklists are lists
-        for blacklist in ["title_blacklist"]:
+        for blacklist in ["title_blacklist", "company_blacklist"]:
             if not isinstance(parameters.get(blacklist), list):
                 raise ConfigError(
                     f"'{blacklist}' must be a list in config file {config_yaml_path}"

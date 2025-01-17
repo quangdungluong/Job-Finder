@@ -33,10 +33,14 @@ class JobManager:
         self.positions: List = parameters.get("positions", [])
         self.locations: List = parameters.get("locations", [])
         self.title_blacklist: List = parameters.get("title_blacklist", [])
+        self.company_blacklist: List = parameters.get("company_blacklist", [])
         self.base_search_url = self.get_base_search_url(parameters)
 
         self.title_blacklist_patterns = generate_regex_patterns_for_blacklisting(
             self.title_blacklist
+        )
+        self.company_blacklist_patterns = generate_regex_patterns_for_blacklisting(
+            self.company_blacklist
         )
 
     def get_base_search_url(self, parameters: Dict):
@@ -48,6 +52,9 @@ class JobManager:
             "month": "&f_TPR=r2592000",
             "week": "&f_TPR=r604800",
             "24_hours": "&f_TPR=r86400",
+            "6_hours": "&f_TPR=r21600",
+            "2_hours": "&f_TPR=r7200",
+            "hour": "&f_TPR=r3600",
         }
         date_param = next(
             (v for k, v in date_mapping.items() if parameters.get("date", {}).get(k)),
@@ -88,7 +95,7 @@ class JobManager:
 
         logger.info(f"Number of extracted jobs: {len(job_list)}")
         for job in tqdm(job_list):
-            if self.is_blacklisted(job.title):
+            if self.is_blacklisted(job.company, job.title):
                 continue
             self.save_job_to_db(job, description=False)
 
@@ -154,14 +161,12 @@ class JobManager:
         except NoSuchElementException:
             pass
 
-        # XPath query to find the div tag with class jobs-search-results-list__pagination
-        pagination_xpath_query = (
-            "//div[contains(@class, 'jobs-search-results-list__pagination')]"
-        )
-        jobs_pagination = self.driver.find_element(By.XPATH, pagination_xpath_query)
-        jobs_container_scrollableElement = jobs_pagination.find_element(
-            By.XPATH, "../.."
-        )
+        # # XPath query to find the div tag with class jobs-search-results-list__pagination
+        # pagination_xpath_query = (
+        #     "//div[contains(@class, 'jobs-search-results-list__pagination')]"
+        # )
+        jobs_pagination = self.driver.find_element(By.ID, "jobs-search-results-footer")
+        jobs_container_scrollableElement = jobs_pagination.find_element(By.XPATH, "..")
 
         if is_scroll:
             scroll_slow(self.driver, jobs_container_scrollableElement)
@@ -271,7 +276,6 @@ class JobManager:
             raise Exception(f"Job Description not found:\nTraceback:\n{tb_str}")
         except Exception:
             tb_str = traceback.format_exc()
-            # raise Exception(f"Error getting Job Description:\nTraceback:\b{tb_str}")
             logger.error(f"Error getting Job Description:\nTraceback:\b{tb_str}")
             pass
 
@@ -299,11 +303,16 @@ class JobManager:
                 json.dump(existing_data, f, indent=4)
                 f.truncate()
 
-    def is_blacklisted(self, job_title):
-        is_blacklisted = any(
+    def is_blacklisted(self, company, job_title):
+        company_blacklisted = any(
+            re.search(pattern, company, re.IGNORECASE)
+            for pattern in self.company_blacklist_patterns
+        )
+        title_blacklisted = any(
             re.search(pattern, job_title, re.IGNORECASE)
             for pattern in self.title_blacklist_patterns
         )
+        is_blacklisted = company_blacklisted or title_blacklisted
         return is_blacklisted
 
     def is_expired(self, job: Job):
