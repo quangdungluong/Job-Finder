@@ -86,7 +86,6 @@ class JobManager:
                 while True:
                     job_page_number += 1
                     self.next_job_page(position, location_url, job_page_number)
-                    logger.info("Starting the collecting process for this page.")
                     time.sleep(2)
                     job_list.extend(self.read_jobs(is_scroll=True))
             except Exception as e:
@@ -203,7 +202,6 @@ class JobManager:
                 .find_element(By.TAG_NAME, "strong")
                 .text
             )
-            logger.info(job.title)
         except NoSuchElementException:
             logger.warning("Job title is missing.")
 
@@ -219,7 +217,6 @@ class JobManager:
                 .get_attribute("href")
                 .split("?")[0]
             )
-            logger.info(job.link)
         except NoSuchElementException:
             logger.warning("Job link is missing.")
 
@@ -228,7 +225,6 @@ class JobManager:
                 By.XPATH,
                 ".//div[contains(@class, 'artdeco-entity-lockup__subtitle')]//span",
             ).text
-            logger.info(job.company)
         except NoSuchElementException:
             logger.warning("Job company is missing.")
 
@@ -237,7 +233,6 @@ class JobManager:
                 By.XPATH,
                 ".//div[contains(@class, 'artdeco-entity-lockup__caption')]//span",
             ).text
-            logger.info(job.location)
         except NoSuchElementException:
             logger.warning("Job location is missing")
 
