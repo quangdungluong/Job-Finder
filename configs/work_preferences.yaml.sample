@@ -6,8 +6,15 @@ date:
   month: false
   week: false
   24_hours: false
+  6_hours: false
+  2_hours: false
+  hour: false
 
 locations:
   - Vietnam
 
+company_blacklist:
+  - abc
+
 title_blacklist:
+  - abc
