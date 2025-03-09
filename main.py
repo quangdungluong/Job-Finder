@@ -5,6 +5,7 @@ from webdriver_manager.chrome import ChromeDriverManager
 
 from src.authenticator import LinkedInAuthenticator
 from src.config_validator import ConfigValidator
+from src.itviec_job_manager import ITViecJobManager
 from src.job_manager import JobManager
 from src.logger import logger
 from src.topcv_job_manager import TopCVJobManager
@@ -47,6 +48,14 @@ def main():
             job_manager.set_parameters(parameters)
             job_manager.collecting_data()
             job_manager.retrieve_job_details()
+
+        if "ITViec" in parameters["job_sources"]:
+            scraper = cloudscraper.create_scraper()
+            job_manager = ITViecJobManager(scraper)
+            job_manager.set_parameters(parameters)
+            job_manager.collecting_data()
+            job_manager.retrieve_job_details()
+
     except Exception as e:
         logger.error(f"An unexpected error occurred: {e}")
 

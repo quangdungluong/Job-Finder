@@ -12,6 +12,7 @@ class Job:
     recruiter_link: Optional[str] = None
     salary: Optional[str] = None
     deadline: Optional[str] = None
+    job_key: Optional[str] = None
 
     def set_job_description(self, description):
         self.description = description
