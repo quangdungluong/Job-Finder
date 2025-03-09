@@ -9,7 +9,6 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.wait import WebDriverWait
 
 from src.logger import logger
-from src.utils import is_headless
 
 
 class Authenticator(ABC):
@@ -112,8 +111,7 @@ class LinkedInAuthenticator(Authenticator):
                 EC.url_contains("https://www.linkedin.com/checkpoint/challenge")
             )
             logger.info("Security checkpoint detected. Please complete the challenge.")
-            if is_headless(self.driver):
-                self.complete_checkpoint_challenge()
+            self.complete_checkpoint_challenge()
         except TimeoutException:
             logger.info("Security checkpoint not found")
 
