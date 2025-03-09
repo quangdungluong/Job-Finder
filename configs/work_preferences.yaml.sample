@@ -1,3 +1,7 @@
+job_sources:
+  - LinkedIn
+  - TopCV
+
 positions:
   - AI Engineer
 

@@ -15,11 +15,12 @@ from selenium.common.exceptions import NoSuchElementException
 from selenium.webdriver import ActionChains
 from selenium.webdriver.common.by import By
 from selenium.webdriver.remote.webelement import WebElement
+from sqlalchemy import or_
 from tqdm import tqdm
 
 from src.job import Job
 from src.logger import logger
-from src.models import JobListing, session
+from src.models import JobListing, JobSource, session
 from src.regex_utils import generate_regex_patterns_for_blacklisting
 from src.utils import scroll_slow
 
@@ -65,7 +66,13 @@ class JobManager:
         return full_url
 
     def retrieve_job_description(self):
-        job_records = session.query(JobListing).filter_by(description="").all()
+        job_records = (
+            session.query(JobListing)
+            .join(JobSource)
+            .filter(JobSource.name == "LinkedIn")
+            .filter(or_(JobListing.description == "", JobListing.description.is_(None)))
+            .all()
+        )
         for job_record in tqdm(job_records):
             job = Job(link=job_record.url)
             job_description = self._get_job_description(job)
@@ -93,10 +100,22 @@ class JobManager:
                 pass
 
         logger.info(f"Number of extracted jobs: {len(job_list)}")
+
+        # Insert into db
+        job_source = session.query(JobSource).filter_by(name="LinkedIn").first()
+        if not job_source:
+            job_source = JobSource(name="LinkedIn")
+            try:
+                session.add(job_source)
+                session.commit()
+            except Exception as e:
+                session.rollback()
+                logger.error(f"Error when creating job source LinkedIn.")
+
         for job in tqdm(job_list):
             if self.is_blacklisted(job.company, job.title):
                 continue
-            self.save_job_to_db(job, description=False)
+            self.save_job_to_db(job, job_source, description=False)
 
     def get_job_id(self, job_link: str):
         parsed_url = urlparse(job_link)
@@ -106,16 +125,16 @@ class JobManager:
             return job_id
         return ""
 
-    def save_job_to_db(self, job: Job, description: bool = False):
+    def save_job_to_db(
+        self, job: Job, job_source: JobSource, description: bool = False
+    ):
         try:
-            if job.link == "":
+            if job.link is None:
                 return
 
             linkedin_job_id = self.get_job_id(job.link)
             existing_job = (
-                session.query(JobListing)
-                .filter_by(linkedin_job_id=linkedin_job_id)
-                .first()
+                session.query(JobListing).filter_by(external_id=linkedin_job_id).first()
             )
             if existing_job:
                 return
@@ -125,13 +144,14 @@ class JobManager:
                 job.set_job_description(job_description)
 
             job_listing = JobListing(
-                linkedin_job_id=linkedin_job_id,
+                source_id=job_source.id,
+                external_id=linkedin_job_id,
                 title=job.title,
-                description=job.description,
-                location=job.location,
                 company=job.company,
+                location=job.location,
+                description=job.description,
                 url=job.link,
-                scraped_date=date.today(),
+                crawled_at=date.today(),
                 is_expired=False,
             )
             session.add(job_listing)
@@ -160,19 +180,11 @@ class JobManager:
         except NoSuchElementException:
             pass
 
-        # # XPath query to find the div tag with class jobs-search-results-list__pagination
-        # pagination_xpath_query = (
-        #     "//div[contains(@class, 'jobs-search-results-list__pagination')]"
-        # )
         jobs_pagination = self.driver.find_element(By.ID, "jobs-search-results-footer")
         jobs_container_scrollableElement = jobs_pagination.find_element(By.XPATH, "..")
 
         if is_scroll:
             scroll_slow(self.driver, jobs_container_scrollableElement)
-            # Disable scroll reverse for faster read jobs
-            # scroll_slow(
-            #     self.driver, jobs_container_scrollableElement, step=300, reverse=True
-            # )
 
         jobs_container = self.driver.find_element(
             By.CLASS_NAME, "scaffold-layout__list "
