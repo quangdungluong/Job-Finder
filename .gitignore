@@ -12,3 +12,5 @@ node_modules
 configs/work_preferences.yaml
 configs/secrets.yaml
 Default
+.env
+mysql_data/
