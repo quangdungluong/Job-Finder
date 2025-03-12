@@ -1,3 +1,6 @@
+import os
+
+from dotenv import load_dotenv
 from sqlalchemy import (
     Boolean,
     Column,
@@ -12,6 +15,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import declarative_base, relationship, sessionmaker
 
+load_dotenv()
 Base = declarative_base()
 
 
@@ -19,7 +23,7 @@ class JobSource(Base):
     __tablename__ = "job_sources"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    name = Column(String, unique=True, nullable=False)
+    name = Column(String(255), unique=True, nullable=False)
 
     jobs = relationship("JobListing", back_populates="source")
 
@@ -48,7 +52,7 @@ class JobListing(Base):
 
 
 # SQLite Database Connection
-engine = create_engine("sqlite:///assets/database.db")
+engine = create_engine(os.getenv("DB_URL"))
 Base.metadata.create_all(engine)
 Session = sessionmaker(bind=engine)
 session = Session()

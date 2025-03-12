@@ -3,3 +3,4 @@ selenium==4.28.1
 SQLAlchemy==2.0.35
 tqdm==4.66.5
 webdriver_manager==4.0.2
+PyMySQL==1.1.1

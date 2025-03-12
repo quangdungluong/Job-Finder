@@ -44,6 +44,8 @@ def clean_blacklist():
         job_records = session.query(JobListing).all()
         logger.info(f"Number of jobs before cleaned: {len(job_records)}")
         for job_record in tqdm(job_records):
+            if job_record.company is None or job_record.title is None:
+                continue
             if not is_title_blacklisted(
                 job_record.title, title_blacklist_patterns
             ) and not is_company_blacklisted(
