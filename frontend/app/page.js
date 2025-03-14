@@ -70,7 +70,7 @@ export default function JobBoard() {
           >
             <option value="">All Sources</option>
             {jobSources.map((source) => (
-              <option key={source.id} value={source.id}>
+              <option key={source.id} value={source.name}>
                 {source.name}
               </option>
             ))}
