@@ -27,6 +27,9 @@ class JobSource(Base):
 
     jobs = relationship("JobListing", back_populates="source")
 
+    def to_dict(self):
+        return {"id": self.id, "name": self.name}
+
 
 class JobListing(Base):
     __tablename__ = "job_listings"
