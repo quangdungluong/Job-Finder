@@ -1,4 +1,5 @@
 import json
+import random
 import re
 import time
 import traceback
@@ -84,23 +85,6 @@ class JobManager:
                 session.rollback()
 
     def collecting_data(self):
-        searches = list(product(self.positions, self.locations))
-        job_list: List[Job] = []
-        for position, location in searches:
-            try:
-                location_url = "&location=" + location
-                job_page_number = -1
-                while True:
-                    job_page_number += 1
-                    self.next_job_page(position, location_url, job_page_number)
-                    time.sleep(2)
-                    job_list.extend(self.read_jobs(is_scroll=True))
-            except Exception as e:
-                logger.error(e)
-                pass
-
-        logger.info(f"Number of extracted jobs: {len(job_list)}")
-
         # Insert into db
         job_source = session.query(JobSource).filter_by(name="LinkedIn").first()
         if not job_source:
@@ -112,10 +96,31 @@ class JobManager:
                 session.rollback()
                 logger.error(f"Error when creating job source LinkedIn.")
 
-        for job in tqdm(job_list):
-            if self.is_blacklisted(job.company, job.title):
-                continue
-            self.save_job_to_db(job, job_source, description=False)
+        searches = list(product(self.positions, self.locations))
+        job_count = 0
+
+        for position, location in searches:
+            try:
+                location_url = "&location=" + location
+                job_page_number = -1
+                while True:
+                    job_page_number += 1
+                    self.next_job_page(position, location_url, job_page_number)
+                    time.sleep(random.uniform(2, 4))
+                    job_list: List[Job] = self.read_jobs(is_scroll=True)
+                    job_list = [
+                        job
+                        for job in tqdm(job_list)
+                        if not self.is_blacklisted(job.company, job.title)
+                    ]
+                    for job in tqdm(job_list):
+                        self.save_job_to_db(job, job_source, description=False)
+                    job_count += len(job_list)
+            except Exception as e:
+                logger.error(e)
+                pass
+
+        logger.info(f"Number of extracted jobs: {job_count}")
 
     def get_job_id(self, job_link: str):
         parsed_url = urlparse(job_link)
@@ -267,7 +272,7 @@ class JobManager:
                 time.sleep(2)
             except NoSuchElementException:
                 logger.warning("See more button not found, skipping.")
-                return
+                # return
 
             try:
                 description = self.driver.find_element(
@@ -280,7 +285,8 @@ class JobManager:
             return description
         except NoSuchElementException:
             tb_str = traceback.format_exc()
-            raise Exception(f"Job Description not found:\nTraceback:\n{tb_str}")
+            # raise Exception(f"Job Description not found:\nTraceback:\n{tb_str}")
+            logger.warning(tb_str)
         except Exception:
             tb_str = traceback.format_exc()
             logger.error(f"Error getting Job Description:\nTraceback:\b{tb_str}")
