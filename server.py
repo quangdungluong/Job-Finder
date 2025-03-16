@@ -4,7 +4,7 @@ from typing import List, Optional
 
 from dotenv import load_dotenv
 from elasticsearch import Elasticsearch
-from fastapi import Depends, FastAPI
+from fastapi import Depends, FastAPI, Query
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, ConfigDict
 
@@ -83,13 +83,20 @@ def read_job_sources(db=Depends(get_db)):
     return [source.to_dict() for source in sources]
 
 
+@app.get("/locations")
+def get_locations(db=Depends(get_db)):
+    locations = db.query(JobListing.location).distinct().all()
+    return [loc[0] for loc in locations if loc[0]]  # Filter out None values
+
+
 @app.get("/jobs")
 def read_jobs(
-    source=None,
-    search=None,
+    source: Optional[str] = None,
+    search: Optional[str] = None,
     page: int = 1,
     per_page: int = 10,
     favorites: bool = False,
+    locations: List[str] = Query(None),
     db=Depends(get_db),
 ):
     index_name = "job_tester_listing"
@@ -111,6 +118,10 @@ def read_jobs(
         }
         if source:
             es_query["query"]["bool"]["filter"].append({"term": {"source": source}})
+        if locations and len(locations) > 0:
+            es_query["query"]["bool"]["filter"].append(
+                {"terms": {"location": locations}}
+            )
         es_response = es.search(index=index_name, body=es_query)
         hits = es_response["hits"]["hits"]
         total = (
@@ -132,8 +143,9 @@ def read_jobs(
         query = db.query(JobListing).join(JobSource)
         if source:
             query = query.filter(JobSource.name == source)
+        if locations and len(locations) > 0:
+            query = query.filter(JobListing.location.in_(locations))
         if favorites:
-            # Get favorite job IDs from the favorites table
             favorite_job_ids = db.query(Favorite.job_listing_id).all()
             favorite_job_ids = [id[0] for id in favorite_job_ids]
             query = query.filter(JobListing.id.in_(favorite_job_ids))
