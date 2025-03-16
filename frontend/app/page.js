@@ -447,7 +447,7 @@ export default function JobBoard() {
                     </span>
                   )}
                 </div>
-                <div className="prose prose-gray max-w-none">
+                <div className="prose prose-gray max-w-none whitespace-pre-wrap">
                   {selectedJob.description}
                 </div>
                 <div className="flex flex-wrap gap-3 pt-4">
