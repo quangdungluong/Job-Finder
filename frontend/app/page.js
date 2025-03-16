@@ -13,7 +13,15 @@ export default function JobBoard() {
   const [total, setTotal] = useState(0);
   const [favorites, setFavorites] = useState([]);
   const [showFavorites, setShowFavorites] = useState(false);
-  const perPage = 10;
+  const [perPage, setPerPage] = useState(() => {
+    // Check if running in the browser before accessing localStorage
+    if (typeof window !== "undefined") {
+      return parseInt(localStorage.getItem("perPage")) || 10;
+    }
+    return 10; // Default value for SSR
+  });
+  const [customPage, setCustomPage] = useState("");
+  const perPageOptions = [5, 10, 25, 50];
 
   const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
@@ -70,9 +78,73 @@ export default function JobBoard() {
       }
     }
     fetchJobs();
-  }, [apiBase, selectedSource, search, page, showFavorites]);
+  }, [apiBase, selectedSource, search, page, showFavorites, perPage]);
+
+  // Save perPage to localStorage whenever it changes
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      localStorage.setItem("perPage", perPage);
+    }
+  }, [perPage]);
 
   const totalPages = Math.ceil(total / perPage);
+
+  // Generate pagination numbers with ellipsis
+  const generatePaginationNumbers = () => {
+    const delta = 2; // Number of pages to show before and after current page
+    const range = [];
+    const rangeWithDots = [];
+    let l;
+
+    range.push(1);
+
+    for (let i = page - delta; i <= page + delta; i++) {
+      if (i < totalPages && i > 1) {
+        range.push(i);
+      }
+    }
+
+    if (totalPages > 1) {
+      range.push(totalPages);
+    }
+
+    for (let i of range) {
+      if (l) {
+        if (i - l === 2) {
+          rangeWithDots.push(l + 1);
+        } else if (i - l !== 1) {
+          rangeWithDots.push('...');
+        }
+      }
+      rangeWithDots.push(i);
+      l = i;
+    }
+
+    return rangeWithDots;
+  };
+
+  const handlePageChange = (newPage) => {
+    if (newPage >= 1 && newPage <= totalPages) {
+      setPage(newPage);
+      setCustomPage("");
+    }
+  };
+
+  const handleCustomPageChange = (e) => {
+    const value = e.target.value;
+    setCustomPage(value);
+
+    const pageNum = parseInt(value);
+    if (pageNum && pageNum >= 1 && pageNum <= totalPages) {
+      setPage(pageNum);
+    }
+  };
+
+  const handlePerPageChange = (e) => {
+    const newPerPage = parseInt(e.target.value);
+    setPerPage(newPerPage);
+    setPage(1); // Reset to first page when changing items per page
+  };
 
   async function saveFavorite(jobId) {
     try {
@@ -113,17 +185,17 @@ export default function JobBoard() {
   const isFavorite = (jobId) => favorites.includes(jobId);
 
   return (
-    <div className="flex h-[calc(100vh-80px)] shadow-lg bg-white rounded-lg overflow-hidden">
+    <div className="flex flex-col md:flex-row h-[calc(100vh-80px)] shadow-lg bg-white rounded-lg overflow-hidden">
       {/* Left Column: Job List */}
-      <div className="w-1/3 border-r border-gray-200 overflow-y-auto">
-        <div className="p-4 border-b">
+      <div className="w-full md:w-[40%] border-r border-gray-200 overflow-y-auto">
+        <div className="p-4 border-b bg-gray-50">
           <input
             type="text"
             placeholder="Search jobs..."
             className="w-full p-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-300"
             onChange={(e) => { setSearch(e.target.value); setPage(1); }}
           />
-          <div className="flex gap-2 mt-2">
+          <div className="flex flex-col md:flex-row gap-2 mt-2">
             <select
               className="flex-1 p-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-300"
               onChange={(e) => { setSelectedSource(e.target.value); setPage(1); }}
@@ -136,11 +208,10 @@ export default function JobBoard() {
               ))}
             </select>
             <button
-              className={`px-4 py-2 rounded-md ${
-                showFavorites
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-gray-100 text-gray-700'
-              }`}
+              className={`px-4 py-2 rounded-md transition-colors ${showFavorites
+                ? 'bg-gray-700 text-white hover:bg-gray-800'
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
               onClick={() => setShowFavorites(!showFavorites)}
             >
               ❤️ Favorites
@@ -159,30 +230,83 @@ export default function JobBoard() {
             </li>
           ))}
         </ul>
-        {/* Pagination */}
-        <div className="p-4 flex justify-between items-center border-t">
-          <button
-            className="px-3 py-1 bg-blue-600 text-white rounded disabled:opacity-50"
-            disabled={page === 1}
-            onClick={() => setPage(page - 1)}
-          >
-            Previous
-          </button>
-          <span className="text-gray-700">
-            Page {page} of {totalPages}
-          </span>
-          <button
-            className="px-3 py-1 bg-blue-600 text-white rounded disabled:opacity-50"
-            disabled={page === totalPages}
-            onClick={() => setPage(page + 1)}
-          >
-            Next
-          </button>
+        {/* Enhanced Pagination */}
+        <div className="p-4 space-y-3 border-t bg-gray-50">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-2">
+              <span className="text-sm text-gray-600">Items per page:</span>
+              <select
+                value={perPage}
+                onChange={handlePerPageChange}
+                className="p-1 text-sm border rounded focus:outline-none focus:ring-2 focus:ring-blue-300"
+              >
+                {perPageOptions.map(option => (
+                  <option key={option} value={option}>{option}</option>
+                ))}
+              </select>
+            </div>
+            <div className="flex items-center space-x-2">
+              <span className="text-sm text-gray-600">Go to page:</span>
+              <input
+                type="number"
+                min="1"
+                max={totalPages}
+                value={customPage}
+                onChange={handleCustomPageChange}
+                className="w-16 p-1 text-sm border rounded focus:outline-none focus:ring-2 focus:ring-blue-300"
+                placeholder={page}
+              />
+              <span className="text-sm text-gray-600">of {totalPages}</span>
+            </div>
+          </div>
+          <div className="flex justify-center items-center space-x-1">
+            <button
+              className="px-3 py-1 text-sm bg-white border rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              disabled={page === 1}
+              onClick={() => handlePageChange(1)}
+            >
+              First
+            </button>
+            <button
+              className="px-3 py-1 text-sm bg-white border rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              disabled={page === 1}
+              onClick={() => handlePageChange(page - 1)}
+            >
+              ←
+            </button>
+            {generatePaginationNumbers().map((pageNum, idx) => (
+              <button
+                key={idx}
+                onClick={() => typeof pageNum === 'number' && handlePageChange(pageNum)}
+                className={`px-3 py-1 text-sm border rounded ${pageNum === page
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-white hover:bg-gray-50'
+                  } ${typeof pageNum !== 'number' ? 'cursor-default' : 'cursor-pointer'}`}
+                disabled={typeof pageNum !== 'number'}
+              >
+                {pageNum}
+              </button>
+            ))}
+            <button
+              className="px-3 py-1 text-sm bg-white border rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              disabled={page === totalPages}
+              onClick={() => handlePageChange(page + 1)}
+            >
+              →
+            </button>
+            <button
+              className="px-3 py-1 text-sm bg-white border rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              disabled={page === totalPages}
+              onClick={() => handlePageChange(totalPages)}
+            >
+              Last
+            </button>
+          </div>
         </div>
       </div>
 
       {/* Right Column: Job Detail */}
-      <div className="w-2/3 p-6 overflow-y-auto">
+      <div className="w-full md:w-[60%] p-6 overflow-y-auto">
         {selectedJob ? (
           <div>
             <h1 className="text-3xl font-bold text-gray-800">{selectedJob.title}</h1>
@@ -195,21 +319,21 @@ export default function JobBoard() {
                 href={selectedJob.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="px-6 py-3 bg-indigo-600 text-white rounded-md shadow hover:bg-indigo-700 transition-colors"
+                className="px-6 py-3 bg-gray-500 text-white rounded-md shadow hover:bg-gray-600 transition-colors"
               >
                 Apply Now
               </a>
               {isFavorite(selectedJob.id) ? (
                 <button
                   onClick={() => deleteFavorite(selectedJob.id)}
-                  className="px-6 py-3 bg-red-600 text-white rounded-md shadow hover:bg-red-700 transition-colors"
+                  className="px-6 py-3 bg-gray-500 text-white rounded-md shadow hover:bg-gray-600 transition-colors"
                 >
                   Remove Favorite
                 </button>
               ) : (
                 <button
                   onClick={() => saveFavorite(selectedJob.id)}
-                  className="px-6 py-3 bg-green-600 text-white rounded-md shadow hover:bg-green-700 transition-colors"
+                  className="px-6 py-3 bg-gray-500 text-white rounded-md shadow hover:bg-gray-600 transition-colors"
                 >
                   Save Favorite
                 </button>
