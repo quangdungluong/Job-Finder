@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from "react";
 import JobCard from "../components/JobCard";
+import JobSourceFilter from "../components/JobSourceFilter";
+import LocationFilter from "../components/LocationFilter";
 
 export default function JobBoard() {
   const [jobs, setJobs] = useState([]);
@@ -34,9 +36,13 @@ export default function JobBoard() {
       try {
         const res = await fetch(`${apiBase}/locations`);
         const data = await res.json();
-        setLocations(data);
+        console.log('Fetched locations:', data); // Debug log
+        // Ensure we're getting an array of location strings
+        const locationArray = Array.isArray(data) ? data : [];
+        setLocations(locationArray);
       } catch (error) {
         console.error("Error fetching locations:", error);
+        setLocations([]); // Set empty array on error
       }
     }
     fetchLocations();
@@ -257,79 +263,17 @@ export default function JobBoard() {
           {/* Expandable Filters */}
           <div className={`space-y-4 overflow-hidden transition-all ${isFilterOpen ? 'max-h-[500px] opacity-100' : 'max-h-0 opacity-0'
             }`}>
-            <div>
-              <label className="text-sm text-gray-600 block mb-2">Source</label>
-              <select
-                className="w-full p-2 bg-gray-50 border-0 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-200"
-                onChange={(e) => { setSelectedSource(e.target.value); setPage(1); }}
-                value={selectedSource}
-              >
-                <option value="">All Sources</option>
-                {jobSources.map((source) => (
-                  <option key={source.id} value={source.name}>
-                    {source.name}
-                  </option>
-                ))}
-              </select>
-            </div>
+            <JobSourceFilter
+              jobSources={jobSources}
+              selectedSource={selectedSource}
+              onSourceChange={(value) => { setSelectedSource(value); setPage(1); }}
+            />
 
-            <div>
-              <div className="flex justify-between items-center mb-2">
-                <label className="text-sm text-gray-600">Locations</label>
-                <span className="text-xs text-gray-500">
-                  {selectedLocations.length} selected
-                </span>
-              </div>
-              <div className="relative">
-                <input
-                  type="text"
-                  placeholder="Search locations..."
-                  className="w-full p-2 bg-gray-50 border-0 rounded-t-lg focus:outline-none focus:ring-2 focus:ring-gray-200"
-                  value={locationSearch}
-                  onChange={(e) => setLocationSearch(e.target.value)}
-                />
-                {selectedLocations.length > 0 && (
-                  <div className="flex flex-wrap gap-1 p-2 bg-gray-50 border-t border-gray-100">
-                    {selectedLocations.map((loc) => (
-                      <span
-                        key={loc}
-                        className="inline-flex items-center px-2 py-1 bg-gray-200 text-xs text-gray-700 rounded-full"
-                      >
-                        {loc}
-                        <button
-                          onClick={() => handleLocationChange(loc)}
-                          className="ml-1 hover:text-gray-900"
-                        >
-                          ×
-                        </button>
-                      </span>
-                    ))}
-                  </div>
-                )}
-              </div>
-              <div className="max-h-[200px] overflow-y-auto rounded-b-lg border-t border-gray-100">
-                {filteredLocations.length > 0 ? (
-                  filteredLocations.map((location) => (
-                    <label
-                      key={location}
-                      className="flex items-center px-3 py-2 hover:bg-gray-50 cursor-pointer"
-                    >
-                      <input
-                        type="checkbox"
-                        checked={selectedLocations.includes(location)}
-                        onChange={() => handleLocationChange(location)}
-                        className="rounded border-gray-300 text-gray-900 focus:ring-gray-200"
-                      />
-                      <span className="ml-2 text-sm text-gray-700">{location}</span>
-                    </label>
-                  ))
-                ) : (
-                  <div className="p-3 text-sm text-gray-500 text-center">
-                    No locations found
-                  </div>
-                )}
-              </div>
-            </div>
+            <LocationFilter
+              locations={locations}
+              selectedLocations={selectedLocations}
+              onLocationChange={handleLocationChange}
+            />
           </div>
         </div>
 
