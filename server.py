@@ -8,7 +8,7 @@ from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, ConfigDict
 
-from src.models import JobListing, JobSource, Session
+from src.models import Favorite, JobListing, JobSource, Session
 
 load_dotenv(override=True)
 
@@ -46,6 +46,17 @@ class JobListingResponse(BaseModel):
     per_page: int
 
 
+class FavoriteSchema(BaseModel):
+    job_listing_id: int
+
+
+class FavoriteResponse(BaseModel):
+    id: int
+    job_listing_id: int
+
+    model_config = ConfigDict(from_attributes=True)
+
+
 app = FastAPI()
 app.add_middleware(
     CORSMiddleware,
@@ -74,7 +85,12 @@ def read_job_sources(db=Depends(get_db)):
 
 @app.get("/jobs")
 def read_jobs(
-    source=None, search=None, page: int = 1, per_page: int = 10, db=Depends(get_db)
+    source=None,
+    search=None,
+    page: int = 1,
+    per_page: int = 10,
+    favorites: bool = False,
+    db=Depends(get_db),
 ):
     index_name = "job_tester_listing"
     if search:
@@ -116,9 +132,44 @@ def read_jobs(
         query = db.query(JobListing).join(JobSource)
         if source:
             query = query.filter(JobSource.name == source)
+        if favorites:
+            # Get favorite job IDs from the favorites table
+            favorite_job_ids = db.query(Favorite.job_listing_id).all()
+            favorite_job_ids = [id[0] for id in favorite_job_ids]
+            query = query.filter(JobListing.id.in_(favorite_job_ids))
         total = query.count()
         jobs = query.offset((page - 1) * per_page).limit(per_page).all()
         jobs_data = [JobListingSchema.model_validate(job) for job in jobs]
         return JobListingResponse(
             jobs=jobs_data, total=total, page=page, per_page=per_page
         )
+
+
+# Favorites endpoints
+@app.get("/favorites")
+def get_favorites(db=Depends(get_db)):
+    favorites = db.query(Favorite.job_listing_id).all()
+    return [fav[0] for fav in favorites]
+
+
+@app.post("/favorites")
+def create_favorite(favorite: FavoriteSchema, db=Depends(get_db)):
+    db_favorite = Favorite(job_listing_id=favorite.job_listing_id)
+    db.add(db_favorite)
+    try:
+        db.commit()
+        db.refresh(db_favorite)
+        return FavoriteResponse.model_validate(db_favorite)
+    except:
+        db.rollback()
+        return {"error": "Could not save favorite"}
+
+
+@app.delete("/favorites/{job_id}")
+def delete_favorite(job_id: int, db=Depends(get_db)):
+    favorite = db.query(Favorite).filter(Favorite.job_listing_id == job_id).first()
+    if favorite:
+        db.delete(favorite)
+        db.commit()
+        return {"message": "Favorite deleted"}
+    return {"error": "Favorite not found"}

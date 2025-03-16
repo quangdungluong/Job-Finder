@@ -15,7 +15,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import declarative_base, relationship, sessionmaker
 
-load_dotenv()
+load_dotenv(override=True)
 Base = declarative_base()
 
 
@@ -52,6 +52,17 @@ class JobListing(Base):
     __table_args__ = (
         UniqueConstraint("source_id", "external_id", name="uq_source_external_id"),
     )
+
+
+class Favorite(Base):
+    __tablename__ = "favorites"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    job_listing_id = Column(Integer, ForeignKey("job_listings.id"), nullable=False)
+
+    job = relationship("JobListing")
+
+    __table_args__ = (UniqueConstraint("job_listing_id", name="uq_favorite_job"),)
 
 
 # SQLite Database Connection
