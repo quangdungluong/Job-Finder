@@ -259,7 +259,6 @@ export default function JobBoard() {
       if (res.ok) {
         const updatedFavorites = [...favorites, jobId];
         setFavorites(updatedFavorites);
-        alert("Job saved as favorite!");
       } else {
         alert("Could not save favorite.");
       }
@@ -276,7 +275,6 @@ export default function JobBoard() {
       if (res.ok) {
         const updatedFavorites = favorites.filter(id => id !== jobId);
         setFavorites(updatedFavorites);
-        alert("Favorite removed!");
       } else {
         alert("Could not remove favorite.");
       }
@@ -288,7 +286,7 @@ export default function JobBoard() {
   const isFavorite = (jobId) => favorites.includes(jobId);
 
   return (
-    <div className="flex flex-col lg:flex-row h-screen bg-white">
+    <div className="flex flex-col lg:flex-row min-h-screen w-full bg-white">
       {/* Left Column: Filters and Job List */}
       <div className="w-full lg:w-[400px] xl:w-[450px] border-r border-gray-100 flex flex-col h-screen">
         {/* Search and Filters */}

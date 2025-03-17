@@ -13,7 +13,7 @@ export default function JobDetails({
     onTranslate
 }) {
     return (
-        <div className="max-w-3xl mx-auto p-6 lg:p-8">
+        <div className="max-w-7xl mx-auto p-6 lg:p-8">
             <div className="bg-white rounded-xl p-6 shadow-sm">
                 <div className="space-y-4">
                     <div className="flex justify-between items-start">
