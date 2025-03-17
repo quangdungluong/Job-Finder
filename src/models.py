@@ -41,6 +41,7 @@ class JobListing(Base):
     company = Column(String(255))
     location = Column(String(255))
     description = Column(Text)
+    translated_description = Column(Text, nullable=True)
     salary = Column(String(255))
     deadline = Column(String(255))
     url = Column(String(500), nullable=False, unique=True)

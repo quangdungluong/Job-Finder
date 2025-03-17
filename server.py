@@ -2,6 +2,7 @@ import os
 from datetime import date
 from typing import List, Optional
 
+import google.generativeai as genai
 from dotenv import load_dotenv
 from elasticsearch import Elasticsearch
 from fastapi import Depends, FastAPI, Query
@@ -11,6 +12,10 @@ from pydantic import BaseModel, ConfigDict
 from src.models import Favorite, JobListing, JobSource, Session
 
 load_dotenv(override=True)
+
+# Configure Gemini
+genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
+model = genai.GenerativeModel("gemini-2.0-flash")
 
 
 # Pydantic Schemas
@@ -55,6 +60,15 @@ class FavoriteResponse(BaseModel):
     job_listing_id: int
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class TranslationRequest(BaseModel):
+    job_id: int
+    text: str
+
+
+class TranslationResponse(BaseModel):
+    translated_text: str
 
 
 app = FastAPI()
@@ -185,3 +199,25 @@ def delete_favorite(job_id: int, db=Depends(get_db)):
         db.commit()
         return {"message": "Favorite deleted"}
     return {"error": "Favorite not found"}
+
+
+@app.post("/translate")
+async def translate_job_description(request: TranslationRequest, db=Depends(get_db)):
+    # Check if translation already exists
+    job = db.query(JobListing).filter(JobListing.id == request.job_id).first()
+    if not job:
+        return {"error": "Job not found"}
+
+    if job.translated_description:
+        return TranslationResponse(translated_text=job.translated_description)
+
+    # Generate translation using Gemini
+    prompt = f"Translate the following English text into Vietnamese while maintaining the intended formatting as closely as possible. Use **abc** for bold text and * abc for bundle formatting, but adapt flexibly if needed to ensure readability and natural presentation.:\n\n{request.text}"
+    response = model.generate_content(prompt)
+    translated_text = response.text
+
+    # Save translation to database
+    job.translated_description = translated_text
+    db.commit()
+
+    return TranslationResponse(translated_text=translated_text)

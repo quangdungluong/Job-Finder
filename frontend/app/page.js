@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import JobCard from "../components/JobCard";
 import JobSourceFilter from "../components/JobSourceFilter";
 import LocationFilter from "../components/LocationFilter";
+import JobDetails from "../components/JobDetails";
 
 export default function JobBoard() {
   const [jobs, setJobs] = useState([]);
@@ -27,6 +28,19 @@ export default function JobBoard() {
   const perPageOptions = [5, 10, 25, 50];
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [locationSearch, setLocationSearch] = useState("");
+  const [translations, setTranslations] = useState(() => {
+    if (typeof window !== "undefined") {
+      return JSON.parse(localStorage.getItem("translations")) || {};
+    }
+    return {};
+  });
+  const [translationStates, setTranslationStates] = useState(() => {
+    if (typeof window !== "undefined") {
+      return JSON.parse(localStorage.getItem("translationStates")) || {};
+    }
+    return {};
+  });
+  const [isTranslating, setIsTranslating] = useState(false);
 
   const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
@@ -113,6 +127,14 @@ export default function JobBoard() {
     }
   }, [perPage]);
 
+  // Save translations and states to localStorage whenever they change
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      localStorage.setItem("translations", JSON.stringify(translations));
+      localStorage.setItem("translationStates", JSON.stringify(translationStates));
+    }
+  }, [translations, translationStates]);
+
   const totalPages = Math.ceil(total / perPage);
 
   // Generate pagination numbers with ellipsis
@@ -184,6 +206,48 @@ export default function JobBoard() {
   const filteredLocations = locations.filter(location =>
     location.toLowerCase().includes(locationSearch.toLowerCase())
   );
+
+  const handleTranslate = async (jobId, text) => {
+    if (translations[jobId]) {
+      setTranslationStates(prev => ({
+        ...prev,
+        [jobId]: !prev[jobId]
+      }));
+      return;
+    }
+
+    setIsTranslating(true);
+    try {
+      const response = await fetch(`${apiBase}/translate`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          job_id: jobId,
+          text: text,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Translation failed');
+      }
+
+      const data = await response.json();
+      setTranslations(prev => ({
+        ...prev,
+        [jobId]: data.translated_text
+      }));
+      setTranslationStates(prev => ({
+        ...prev,
+        [jobId]: true
+      }));
+    } catch (error) {
+      console.error('Translation error:', error);
+    } finally {
+      setIsTranslating(false);
+    }
+  };
 
   async function saveFavorite(jobId) {
     try {
@@ -374,48 +438,19 @@ export default function JobBoard() {
       {/* Right Column: Job Detail */}
       <div className="flex-1 h-screen overflow-y-auto bg-gray-50">
         {selectedJob ? (
-          <div className="max-w-3xl mx-auto p-6 lg:p-8">
-            <div className="bg-white rounded-xl p-6 shadow-sm">
-              <div className="space-y-4">
-                <h1 className="text-2xl font-semibold text-gray-900">{selectedJob.title}</h1>
-                <div className="flex flex-wrap gap-2">
-                  <span className="px-3 py-1 bg-gray-100 rounded-full text-sm text-gray-700">
-                    {selectedJob.company}
-                  </span>
-                  <span className="px-3 py-1 bg-gray-100 rounded-full text-sm text-gray-700">
-                    {selectedJob.location}
-                  </span>
-                  {selectedJob.salary && (
-                    <span className="px-3 py-1 bg-gray-100 rounded-full text-sm text-gray-700">
-                      {selectedJob.salary}
-                    </span>
-                  )}
-                </div>
-                <div className="prose prose-gray max-w-none whitespace-pre-wrap">
-                  {selectedJob.description}
-                </div>
-                <div className="flex flex-wrap gap-3 pt-4">
-                  <a
-                    href={selectedJob.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="px-6 py-2 bg-gray-100 text-white rounded-lg hover:bg-gray-200 transition-all"
-                  >
-                    Apply Now
-                  </a>
-                  <button
-                    onClick={() => isFavorite(selectedJob.id)
-                      ? deleteFavorite(selectedJob.id)
-                      : saveFavorite(selectedJob.id)
-                    }
-                    className="px-6 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-all"
-                  >
-                    {isFavorite(selectedJob.id) ? 'Remove Favorite' : 'Save Favorite'}
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
+          <JobDetails
+            job={selectedJob}
+            isFavorite={isFavorite(selectedJob.id)}
+            onToggleFavorite={() =>
+              isFavorite(selectedJob.id)
+                ? deleteFavorite(selectedJob.id)
+                : saveFavorite(selectedJob.id)
+            }
+            translation={translations[selectedJob.id]}
+            showTranslation={translationStates[selectedJob.id] || false}
+            isTranslating={isTranslating}
+            onTranslate={() => handleTranslate(selectedJob.id, selectedJob.description)}
+          />
         ) : (
           <div className="h-full flex items-center justify-center">
             <p className="text-gray-500">Select a job to see details</p>

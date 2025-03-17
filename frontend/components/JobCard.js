@@ -1,5 +1,7 @@
 "use client";
 
+import { FaHeart, FaRegHeart } from 'react-icons/fa';
+
 export default function JobCard({ job, compact = false, isFavorite, onToggleFavorite }) {
     return (
         <div className="p-4 hover:bg-gray-50 transition-all">
@@ -22,15 +24,18 @@ export default function JobCard({ job, compact = false, isFavorite, onToggleFavo
                         </p>
                     )}
                 </div>
-                <button
-                    onClick={(e) => {
-                        e.stopPropagation();
-                        onToggleFavorite();
-                    }}
-                    className="ml-4 p-1 text-gray-400 hover:text-gray-600 transition-colors"
-                >
-                    {isFavorite ? '❤️' : '🤍'}
-                </button>
+                <div className="ml-4 flex items-center gap-2">
+                    <button
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            onToggleFavorite();
+                        }}
+                        className="p-1 text-gray-400 hover:text-red-600 transition-colors"
+                        title={isFavorite ? 'Remove from favorites' : 'Add to favorites'}
+                    >
+                        {isFavorite ? <FaHeart className="w-5 h-5 text-red-600" /> : <FaRegHeart className="w-5 h-5" />}
+                    </button>
+                </div>
             </div>
         </div>
     );
