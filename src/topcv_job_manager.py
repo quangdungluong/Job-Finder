@@ -50,6 +50,7 @@ class TopCVJobManager:
                 job_record.company = job.company
                 job_record.description = job.description
                 job_record.title = job.title
+                job_record.location = job.location
                 session.commit()
             except Exception as e:
                 logger.error(e)
@@ -181,10 +182,30 @@ class TopCVJobManager:
         except AttributeError:
             logger.warning("Job company is missing")
 
-        # try:
-        #     job.location = None
-        # except AttributeError:
-        #     logger.warning("")
+        try:
+            info_sections = job_data.find_all(
+                "div", class_="job-detail__info--section-content"
+            )
+            for section in info_sections:
+                title = (
+                    section.find(
+                        "div", class_="job-detail__info--section-content-title"
+                    )
+                    .get_text()
+                    .strip()
+                )
+                value = (
+                    section.find(
+                        "div", class_="job-detail__info--section-content-value"
+                    )
+                    .get_text()
+                    .strip()
+                )
+                if title and value and "địa điểm" in title.lower():
+                    job.location = value
+                    break
+        except AttributeError:
+            logger.warning("Job location is missing")
 
         try:
             # Parse job description
