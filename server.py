@@ -8,6 +8,7 @@ from elasticsearch import Elasticsearch
 from fastapi import Depends, FastAPI, Query
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, ConfigDict
+from sqlalchemy import desc
 
 from src.models import Favorite, JobListing, JobSource, Session
 
@@ -127,6 +128,7 @@ def read_jobs(
                     "filter": [],
                 }
             },
+            "sort": [{"id": {"order": "desc"}}],
             "from": (page - 1) * per_page,
             "size": per_page,
         }
@@ -164,7 +166,12 @@ def read_jobs(
             favorite_job_ids = [id[0] for id in favorite_job_ids]
             query = query.filter(JobListing.id.in_(favorite_job_ids))
         total = query.count()
-        jobs = query.offset((page - 1) * per_page).limit(per_page).all()
+        jobs = (
+            query.order_by(desc(JobListing.id))
+            .offset((page - 1) * per_page)
+            .limit(per_page)
+            .all()
+        )
         jobs_data = [JobListingSchema.model_validate(job) for job in jobs]
         return JobListingResponse(
             jobs=jobs_data, total=total, page=page, per_page=per_page
