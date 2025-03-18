@@ -123,6 +123,7 @@ def read_jobs(
                         "multi_match": {
                             "query": search,
                             "fields": ["title", "company", "location", "description"],
+                            "type": "best_fields",
                         }
                     },
                     "filter": [],
