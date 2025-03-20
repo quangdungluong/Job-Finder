@@ -48,7 +48,7 @@ export default function LocationFilter({ locations, selectedLocations, onLocatio
 
   return (
     <div className="relative" ref={dropdownRef}>
-      <label className="text-sm text-gray-600 block mb-2">
+      <label className="text-sm text-gray-600 dark:text-gray-400 block mb-2">
         Locations ({selectedLocations.length} selected)
       </label>
 
@@ -58,7 +58,7 @@ export default function LocationFilter({ locations, selectedLocations, onLocatio
           {selectedLocations.map((loc) => (
             <span
               key={loc}
-              className="inline-flex items-center px-2 py-1 bg-gray-200 text-xs text-gray-700 rounded-full group hover:bg-gray-300 transition-all"
+              className="inline-flex items-center px-2 py-1 bg-gray-200 dark:bg-gray-700 text-xs text-gray-700 dark:text-gray-300 rounded-full group hover:bg-gray-300 dark:hover:bg-gray-600 transition-all"
             >
               {loc}
               <button
@@ -78,13 +78,13 @@ export default function LocationFilter({ locations, selectedLocations, onLocatio
         <input
           type="text"
           placeholder="Search locations..."
-          className="w-full p-2 bg-gray-50 border-0 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-200"
+          className="w-full p-2 bg-gray-50 dark:bg-gray-700 dark:text-white border-0 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-200 dark:focus:ring-gray-600"
           value={locationSearch}
           onChange={handleSearchChange}
           onFocus={() => setIsDropdownOpen(true)}
         />
         <button
-          className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+          className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
           onClick={() => setIsDropdownOpen(!isDropdownOpen)}
         >
           <span className={`transform transition-transform inline-block ${isDropdownOpen ? 'rotate-180' : ''}`}>
@@ -95,9 +95,9 @@ export default function LocationFilter({ locations, selectedLocations, onLocatio
 
       {/* Dropdown list */}
       {isDropdownOpen && (
-        <div className="fixed z-[100] w-[calc(20%-2rem)] mt-1 bg-white rounded-lg shadow-lg border border-gray-100 max-h-[300px] overflow-y-auto">
-          <div className="sticky top-0 bg-white border-b border-gray-100 px-4 py-2">
-            <div className="text-xs font-medium text-gray-500 uppercase tracking-wider">
+        <div className="fixed z-[100] w-[calc(20%-2rem)] mt-1 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-100 dark:border-gray-700 max-h-[300px] overflow-y-auto">
+          <div className="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-100 dark:border-gray-700 px-4 py-2">
+            <div className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
               {filteredLocations.length} {filteredLocations.length === 1 ? 'location' : 'locations'} found
             </div>
           </div>
@@ -107,13 +107,13 @@ export default function LocationFilter({ locations, selectedLocations, onLocatio
                 <button
                   key={location}
                   onClick={() => handleLocationClick(location)}
-                  className={`w-full px-4 py-2.5 text-left text-sm hover:bg-gray-50 flex items-center justify-between transition-colors duration-150 ${selectedLocations.includes(location) ? 'bg-gray-50' : ''
+                  className={`w-full px-4 py-2.5 text-left text-sm hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center justify-between transition-colors duration-150 ${selectedLocations.includes(location) ? 'bg-gray-50 dark:bg-gray-700' : ''
                     }`}
                 >
                   <div className="flex items-center space-x-2">
                     <span className={`w-4 h-4 rounded border flex items-center justify-center ${selectedLocations.includes(location)
-                      ? 'bg-gray-900 border-gray-900'
-                      : 'border-gray-300'
+                      ? 'bg-gray-900 border-gray-900 dark:bg-gray-600 dark:border-gray-600'
+                      : 'border-gray-300 dark:border-gray-600'
                       }`}>
                       {selectedLocations.includes(location) && (
                         <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -121,17 +121,17 @@ export default function LocationFilter({ locations, selectedLocations, onLocatio
                         </svg>
                       )}
                     </span>
-                    <span className="text-gray-700">{location}</span>
+                    <span className="text-gray-700 dark:text-gray-300">{location}</span>
                   </div>
                 </button>
               ))}
             </div>
-          ) : (
+          ) :
             <div className="px-4 py-6 text-center">
-              <div className="text-gray-500 text-sm mb-1">No locations found</div>
-              <div className="text-gray-400 text-xs">Try adjusting your search</div>
+              <div className="text-gray-500 dark:text-gray-400 text-sm mb-1">No locations found</div>
+              <div className="text-gray-400 dark:text-gray-500 text-xs">Try adjusting your search</div>
             </div>
-          )}
+          }
         </div>
       )}
     </div>

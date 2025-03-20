@@ -286,16 +286,16 @@ export default function JobBoard() {
   const isFavorite = (jobId) => favorites.includes(jobId);
 
   return (
-    <div className="flex flex-col lg:flex-row min-h-screen w-full bg-white">
+    <div className="flex flex-col lg:flex-row h-[calc(100vh-64px)] w-full bg-white dark:bg-gray-900 overflow-hidden">
       {/* Left Column: Filters and Job List */}
-      <div className="w-full lg:w-[400px] xl:w-[450px] border-r border-gray-100 flex flex-col h-screen">
+      <div className="w-full lg:w-[400px] xl:w-[450px] border-r border-gray-100 dark:border-gray-700 flex flex-col h-full overflow-hidden">
         {/* Search and Filters */}
-        <div className="p-4 space-y-4 border-b border-gray-100 bg-white sticky top-0 z-10">
+        <div className="p-4 space-y-4 border-b border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800 sticky top-0 z-10">
           <div className="relative">
             <input
               type="text"
               placeholder="Search jobs..."
-              className="w-full p-3 bg-gray-50 border-0 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-200 transition-all"
+              className="w-full p-3 bg-gray-50 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400 border-0 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-200 dark:focus:ring-gray-600 transition-all"
               onChange={(e) => { setSearch(e.target.value); setPage(1); }}
             />
             <span className="absolute right-3 top-3 text-gray-400">🔍</span>
@@ -304,7 +304,7 @@ export default function JobBoard() {
           <div className="flex gap-2">
             <button
               onClick={() => setIsFilterOpen(!isFilterOpen)}
-              className="px-4 py-2 bg-gray-50 rounded-lg hover:bg-gray-100 transition-all text-gray-700 flex items-center gap-2"
+              className="px-4 py-2 bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-all flex items-center gap-2"
             >
               <span>Filters</span>
               <span className={`transform transition-transform ${isFilterOpen ? 'rotate-180' : ''}`}>
@@ -313,8 +313,8 @@ export default function JobBoard() {
             </button>
             <button
               className={`flex-1 px-4 py-2 rounded-lg transition-all ${showFavorites
-                ? 'bg-gray-900 text-white'
-                : 'bg-gray-50 text-gray-700 hover:bg-gray-100'
+                ? 'bg-rose-500 text-white dark:bg-rose-600 dark:hover:bg-rose-500'
+                : 'bg-gray-50 text-gray-700 hover:bg-gray-100 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'
                 }`}
               onClick={() => setShowFavorites(!showFavorites)}
             >
@@ -339,102 +339,105 @@ export default function JobBoard() {
           </div>
         </div>
 
-        {/* Job List */}
-        <div className="flex-1 overflow-y-auto">
-          {jobs.length > 0 ? (
-            <ul className="divide-y divide-gray-100">
-              {jobs.map((job) => (
-                <li
-                  key={job.id}
-                  className={`cursor-pointer transition-all ${selectedJob && selectedJob.id === job.id
-                    ? "bg-gray-50"
-                    : "hover:bg-gray-50"
-                    }`}
-                  onClick={() => setSelectedJob(job)}
-                >
-                  <JobCard
-                    job={job}
-                    compact={true}
-                    isFavorite={isFavorite(job.id)}
-                    onToggleFavorite={() =>
-                      isFavorite(job.id) ? deleteFavorite(job.id) : saveFavorite(job.id)
-                    }
-                  />
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <div className="p-8 text-center text-gray-500">
-              No jobs found matching your criteria
-            </div>
-          )}
-        </div>
-
-        {/* Pagination */}
-        <div className="p-4 border-t border-gray-100 bg-white sticky bottom-0">
-          <div className="flex items-center justify-between mb-3">
-            <select
-              value={perPage}
-              onChange={handlePerPageChange}
-              className="px-2 py-1 text-sm bg-gray-50 border-0 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-200"
-            >
-              {perPageOptions.map(option => (
-                <option key={option} value={option}>{option} per page</option>
-              ))}
-            </select>
-            <div className="flex items-center space-x-2 text-sm text-gray-600">
-              <span>Page</span>
-              <input
-                type="number"
-                min="1"
-                max={totalPages}
-                value={customPage}
-                onChange={handleCustomPageChange}
-                className="w-16 px-2 py-1 bg-gray-50 border-0 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-200"
-                placeholder={page}
-              />
-              <span>of {totalPages}</span>
-            </div>
+        {/* Job List and Pagination - Made into a flex column with job list taking remaining space */}
+        <div className="flex flex-col flex-grow overflow-hidden">
+          {/* Job List */}
+          <div className="flex-1 overflow-y-auto bg-white dark:bg-gray-800 scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600">
+            {jobs.length > 0 ? (
+              <ul className="divide-y divide-gray-100 dark:divide-gray-700">
+                {jobs.map((job) => (
+                  <li
+                    key={job.id}
+                    className={`cursor-pointer transition-all ${selectedJob && selectedJob.id === job.id
+                      ? "bg-gray-50 dark:bg-gray-700"
+                      : "hover:bg-gray-50 dark:hover:bg-gray-700"
+                      }`}
+                    onClick={() => setSelectedJob(job)}
+                  >
+                    <JobCard
+                      job={job}
+                      compact={true}
+                      isFavorite={isFavorite(job.id)}
+                      onToggleFavorite={() =>
+                        isFavorite(job.id) ? deleteFavorite(job.id) : saveFavorite(job.id)
+                      }
+                    />
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <div className="p-8 text-center text-gray-500 dark:text-gray-400">
+                No jobs found matching your criteria
+              </div>
+            )}
           </div>
 
-          <div className="flex justify-center items-center space-x-1">
-            <button
-              className="p-2 text-sm bg-gray-50 rounded-lg hover:bg-gray-100 disabled:opacity-50 disabled:hover:bg-gray-50 transition-all"
-              disabled={page === 1}
-              onClick={() => handlePageChange(1)}
-            >
-              ««
-            </button>
-            <button
-              className="p-2 text-sm bg-gray-50 rounded-lg hover:bg-gray-100 disabled:opacity-50 disabled:hover:bg-gray-50 transition-all"
-              disabled={page === 1}
-              onClick={() => handlePageChange(page - 1)}
-            >
-              «
-            </button>
-            <span className="px-4 py-2 text-sm">
-              {page} / {totalPages}
-            </span>
-            <button
-              className="p-2 text-sm bg-gray-50 rounded-lg hover:bg-gray-100 disabled:opacity-50 disabled:hover:bg-gray-50 transition-all"
-              disabled={page === totalPages}
-              onClick={() => handlePageChange(page + 1)}
-            >
-              »
-            </button>
-            <button
-              className="p-2 text-sm bg-gray-50 rounded-lg hover:bg-gray-100 disabled:opacity-50 disabled:hover:bg-gray-50 transition-all"
-              disabled={page === totalPages}
-              onClick={() => handlePageChange(totalPages)}
-            >
-              »»
-            </button>
+          {/* Pagination - Fixed at bottom */}
+          <div className="p-4 border-t border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800">
+            <div className="flex items-center justify-between mb-3">
+              <select
+                value={perPage}
+                onChange={handlePerPageChange}
+                className="px-2 py-1 text-sm bg-gray-50 dark:bg-gray-700 dark:text-white border-0 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-200 dark:focus:ring-gray-600"
+              >
+                {perPageOptions.map(option => (
+                  <option key={option} value={option}>{option} per page</option>
+                ))}
+              </select>
+              <div className="flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-300">
+                <span>Page</span>
+                <input
+                  type="number"
+                  min="1"
+                  max={totalPages}
+                  value={customPage}
+                  onChange={handleCustomPageChange}
+                  className="w-16 px-2 py-1 bg-gray-50 dark:bg-gray-700 dark:text-white border-0 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-200 dark:focus:ring-gray-600"
+                  placeholder={page}
+                />
+                <span>of {totalPages}</span>
+              </div>
+            </div>
+
+            <div className="flex justify-center items-center space-x-1">
+              <button
+                className="p-2 text-sm bg-gray-50 dark:bg-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 disabled:opacity-50 disabled:hover:bg-gray-50 dark:disabled:hover:bg-gray-700 transition-all"
+                disabled={page === 1}
+                onClick={() => handlePageChange(1)}
+              >
+                ««
+              </button>
+              <button
+                className="p-2 text-sm bg-gray-50 dark:bg-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 disabled:opacity-50 disabled:hover:bg-gray-50 dark:disabled:hover:bg-gray-700 transition-all"
+                disabled={page === 1}
+                onClick={() => handlePageChange(page - 1)}
+              >
+                «
+              </button>
+              <span className="px-4 py-2 text-sm text-gray-700 dark:text-gray-200">
+                {page} / {totalPages}
+              </span>
+              <button
+                className="p-2 text-sm bg-gray-50 dark:bg-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 disabled:opacity-50 disabled:hover:bg-gray-50 dark:disabled:hover:bg-gray-700 transition-all"
+                disabled={page === totalPages}
+                onClick={() => handlePageChange(page + 1)}
+              >
+                »
+              </button>
+              <button
+                className="p-2 text-sm bg-gray-50 dark:bg-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 disabled:opacity-50 disabled:hover:bg-gray-50 dark:disabled:hover:bg-gray-700 transition-all"
+                disabled={page === totalPages}
+                onClick={() => handlePageChange(totalPages)}
+              >
+                »»
+              </button>
+            </div>
           </div>
         </div>
       </div>
 
       {/* Right Column: Job Detail */}
-      <div className="flex-1 h-screen overflow-y-auto bg-gray-50">
+      <div className="flex-1 h-full overflow-y-auto bg-gray-50 dark:bg-gray-900 scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600">
         {selectedJob ? (
           <JobDetails
             job={selectedJob}
@@ -451,7 +454,7 @@ export default function JobBoard() {
           />
         ) : (
           <div className="h-full flex items-center justify-center">
-            <p className="text-gray-500">Select a job to see details</p>
+            <p className="text-gray-500 dark:text-gray-400">Select a job to see details</p>
           </div>
         )}
       </div>
