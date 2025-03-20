@@ -236,3 +236,77 @@ a:hover {
 .w-2\/3 {
   width: 60%;
 }
+
+/* Pagination styles */
+.pagination-controls {
+  --pagination-bg: var(--button-bg);
+  --pagination-text: var(--button-text);
+  --pagination-active-bg: var(--input-focus);
+  --pagination-active-text: white;
+  --pagination-hover: var(--button-hover);
+  --pagination-disabled: #9ca3af;
+}
+
+.pagination-controls button,
+.pagination-controls div {
+  transition: all 0.2s ease-in-out;
+}
+
+.pagination-controls button:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.pagination-controls button:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+/* Page change animation */
+@keyframes fadeInOut {
+  0% {
+    opacity: 0.5;
+    transform: scale(0.98);
+  }
+
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.pagination-controls .page-indicator {
+  animation: fadeInOut 0.3s ease;
+}
+
+.dark .pagination-controls {
+  --pagination-bg: #2d2d2d;
+  --pagination-text: #e5e5e5;
+  --pagination-active-bg: #4b5563;
+  --pagination-active-text: #ffffff;
+  --pagination-hover: #374151;
+  --pagination-disabled: #6b7280;
+}
+
+/* Remove spinners from number inputs */
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+input[type="number"] {
+  -moz-appearance: textfield;
+}
+
+select {
+  appearance: none;
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right 0.5rem center;
+  background-size: 1em;
+  padding-right: 2.5rem;
+}
+
+.dark select {
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+}

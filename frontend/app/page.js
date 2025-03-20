@@ -20,9 +20,9 @@ export default function JobBoard() {
   const [showFavorites, setShowFavorites] = useState(false);
   const [perPage, setPerPage] = useState(() => {
     if (typeof window !== "undefined") {
-      return parseInt(localStorage.getItem("perPage")) || 10;
+      return parseInt(localStorage.getItem("perPage")) || 25;
     }
-    return 10;
+    return 25;
   });
   const [customPage, setCustomPage] = useState("");
   const perPageOptions = [5, 10, 25, 50];
@@ -136,40 +136,6 @@ export default function JobBoard() {
   }, [translations, translationStates]);
 
   const totalPages = Math.ceil(total / perPage);
-
-  // Generate pagination numbers with ellipsis
-  const generatePaginationNumbers = () => {
-    const delta = 2; // Number of pages to show before and after current page
-    const range = [];
-    const rangeWithDots = [];
-    let l;
-
-    range.push(1);
-
-    for (let i = page - delta; i <= page + delta; i++) {
-      if (i < totalPages && i > 1) {
-        range.push(i);
-      }
-    }
-
-    if (totalPages > 1) {
-      range.push(totalPages);
-    }
-
-    for (let i of range) {
-      if (l) {
-        if (i - l === 2) {
-          rangeWithDots.push(l + 1);
-        } else if (i - l !== 1) {
-          rangeWithDots.push('...');
-        }
-      }
-      rangeWithDots.push(i);
-      l = i;
-    }
-
-    return rangeWithDots;
-  };
 
   const handlePageChange = (newPage) => {
     if (newPage >= 1 && newPage <= totalPages) {
@@ -374,63 +340,92 @@ export default function JobBoard() {
 
           {/* Pagination - Fixed at bottom */}
           <div className="p-4 border-t border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800">
-            <div className="flex items-center justify-between mb-3">
-              <select
-                value={perPage}
-                onChange={handlePerPageChange}
-                className="px-2 py-1 text-sm bg-gray-50 dark:bg-gray-700 dark:text-white border-0 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-200 dark:focus:ring-gray-600"
-              >
-                {perPageOptions.map(option => (
-                  <option key={option} value={option}>{option} per page</option>
-                ))}
-              </select>
-              <div className="flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-300">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
+              <div className="relative inline-block">
+                <select
+                  value={perPage}
+                  onChange={handlePerPageChange}
+                  className="appearance-none pl-3 pr-8 py-2 text-sm bg-gray-50 dark:bg-gray-700 dark:text-white border-0 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-200 dark:focus:ring-gray-600 shadow-sm"
+                >
+                  {perPageOptions.map(option => (
+                    <option key={option} value={option}>{option} per page</option>
+                  ))}
+                </select>
+              </div>
+              <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
                 <span>Page</span>
-                <input
-                  type="number"
-                  min="1"
-                  max={totalPages}
-                  value={customPage}
-                  onChange={handleCustomPageChange}
-                  className="w-16 px-2 py-1 bg-gray-50 dark:bg-gray-700 dark:text-white border-0 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-200 dark:focus:ring-gray-600"
-                  placeholder={page}
-                />
+                <div className="relative">
+                  <input
+                    type="number"
+                    min="1"
+                    max={totalPages}
+                    value={customPage}
+                    onChange={handleCustomPageChange}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        const pageNum = parseInt(customPage);
+                        if (pageNum && pageNum >= 1 && pageNum <= totalPages) {
+                          handlePageChange(pageNum);
+                        }
+                      }
+                    }}
+                    className="w-16 pl-3 pr-1 py-2 bg-gray-50 dark:bg-gray-700 dark:text-white border-0 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-200 dark:focus:ring-gray-600 shadow-sm text-center"
+                    placeholder={page}
+                  />
+                </div>
                 <span>of {totalPages}</span>
               </div>
             </div>
 
-            <div className="flex justify-center items-center space-x-1">
-              <button
-                className="p-2 text-sm bg-gray-50 dark:bg-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 disabled:opacity-50 disabled:hover:bg-gray-50 dark:disabled:hover:bg-gray-700 transition-all"
-                disabled={page === 1}
-                onClick={() => handlePageChange(1)}
-              >
-                ««
-              </button>
-              <button
-                className="p-2 text-sm bg-gray-50 dark:bg-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 disabled:opacity-50 disabled:hover:bg-gray-50 dark:disabled:hover:bg-gray-700 transition-all"
-                disabled={page === 1}
-                onClick={() => handlePageChange(page - 1)}
-              >
-                «
-              </button>
-              <span className="px-4 py-2 text-sm text-gray-700 dark:text-gray-200">
-                {page} / {totalPages}
-              </span>
-              <button
-                className="p-2 text-sm bg-gray-50 dark:bg-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 disabled:opacity-50 disabled:hover:bg-gray-50 dark:disabled:hover:bg-gray-700 transition-all"
-                disabled={page === totalPages}
-                onClick={() => handlePageChange(page + 1)}
-              >
-                »
-              </button>
-              <button
-                className="p-2 text-sm bg-gray-50 dark:bg-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 disabled:opacity-50 disabled:hover:bg-gray-50 dark:disabled:hover:bg-gray-700 transition-all"
-                disabled={page === totalPages}
-                onClick={() => handlePageChange(totalPages)}
-              >
-                »»
-              </button>
+            <div className="flex justify-center items-center pagination-controls">
+              <div className="inline-flex rounded-md shadow-sm bg-gray-50 dark:bg-gray-700 p-1">
+                <button
+                  className="p-2 text-sm text-gray-700 dark:text-gray-200 rounded-l-lg hover:bg-gray-100 dark:hover:bg-gray-600 disabled:opacity-50 disabled:hover:bg-transparent dark:disabled:hover:bg-transparent transition-all"
+                  disabled={page === 1}
+                  onClick={() => handlePageChange(1)}
+                  aria-label="First page"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
+                  </svg>
+                </button>
+                <button
+                  className="p-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600 disabled:opacity-50 disabled:hover:bg-transparent dark:disabled:hover:bg-transparent transition-all"
+                  disabled={page === 1}
+                  onClick={() => handlePageChange(page - 1)}
+                  aria-label="Previous page"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                  </svg>
+                </button>
+
+                {/* Current Page Indicator */}
+                <div className="inline-flex items-center justify-center min-w-[4.5rem] px-4 py-2 text-sm font-medium bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 rounded-md shadow-sm mx-1 page-indicator">
+                  <span>{page}</span>
+                </div>
+
+                <button
+                  className="p-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600 disabled:opacity-50 disabled:hover:bg-transparent dark:disabled:hover:bg-transparent transition-all"
+                  disabled={page === totalPages}
+                  onClick={() => handlePageChange(page + 1)}
+                  aria-label="Next page"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </button>
+                <button
+                  className="p-2 text-sm text-gray-700 dark:text-gray-200 rounded-r-lg hover:bg-gray-100 dark:hover:bg-gray-600 disabled:opacity-50 disabled:hover:bg-transparent dark:disabled:hover:bg-transparent transition-all"
+                  disabled={page === totalPages}
+                  onClick={() => handlePageChange(totalPages)}
+                  aria-label="Last page"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 5l7 7-7 7M5 5l7 7-7 7" />
+                  </svg>
+                </button>
+              </div>
             </div>
           </div>
         </div>
