@@ -1,4 +1,5 @@
 import random
+import re
 import time
 
 from selenium import webdriver
@@ -93,3 +94,45 @@ def scroll_slow(
             logger.warning("The element is not visible.")
     except Exception as e:
         logger.error(e)
+
+
+# Location mapping for standardization
+LOCATION_MAPPING = {
+    "Hà Nội": ["Hanoi", "Ha Noi", "Hà Nội"],
+    "Hồ Chí Minh": [
+        "Ho Chi Minh",
+        "Hồ Chí Minh",
+        "Thu Đuc",
+        "HCM",
+        "HCMC",
+        "Saigon",
+        "Sài Gòn",
+    ],
+    "Đà Nẵng": ["Danang", "Đà Nẵng", "Da Nang"],
+    "Hải Dương": ["Hai Duong", "Hải Dương"],
+    "Hà Name": ["Ha Name", "Hà Name"],
+    "Đồng Tháp": ["Dong Thap", "Đồng Tháp"],
+    "Bến Tree": ["Ben Tree", "Bến Tree"],
+    "Tuyên Quang": ["Tuyen Quang", "Tuyên Quang"],
+    "Nghệ An": ["Nghe An", "Nghệ An"],
+    "Đồng Nai": ["Dong Nai", "Đồng Nai"],
+    "Long An": ["Long An"],
+    "Cần Thơ": ["Can Tho", "Cần Thơ"],
+    "Bình Dương": ["Binh Duong", "Bình Dương", "Thu Dau Not"],
+    "Vũng Tàu": ["Vung Tau", "Vũng Tàu", "Ba Ria", "Bà Rịa"],
+    "Ninh Thuận": ["Ninh Thuan", "Ninh Thuận"],
+    "Bắc Ninh": ["Bac Ninh", "Bắc Ninh"],
+    "Quảng Ngãi": ["Quang Ngai", "Quảng Ngãi"],
+    "Hải Phòng": ["Hai Phong", "Hải Phòng"],
+}
+
+
+def standardize_location(location):
+    if location is None:
+        return None
+
+    for standard_location, patterns in LOCATION_MAPPING.items():
+        if any(re.search(pattern, location, re.IGNORECASE) for pattern in patterns):
+            return standard_location
+
+    return location

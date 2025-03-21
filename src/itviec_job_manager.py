@@ -15,6 +15,7 @@ from src.job import Job
 from src.logger import logger
 from src.models import JobListing, JobSource, session
 from src.regex_utils import generate_regex_patterns_for_blacklisting
+from src.utils import standardize_location
 
 
 class ITViecJobManager:
@@ -91,7 +92,6 @@ class ITViecJobManager:
                 session.query(JobListing).filter_by(external_id=itviec_job_id).first()
             )
             if existing_job:
-                logger.info(f"existing: {itviec_job_id} - {job.link}")
                 return
 
             job_listing = JobListing(
@@ -99,7 +99,7 @@ class ITViecJobManager:
                 external_id=itviec_job_id,
                 title=job.title,
                 company=job.company,
-                location=job.location,
+                location=standardize_location(job.location),
                 description=job.description,
                 url=job.link,
                 crawled_at=date.today(),
