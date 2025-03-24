@@ -95,7 +95,6 @@ class TopCVJobManager:
                 session.query(JobListing).filter_by(external_id=topcv_job_id).first()
             )
             if existing_job:
-                logger.info(f"existing: {topcv_job_id} - {job.link}")
                 return
 
             job_listing = JobListing(
