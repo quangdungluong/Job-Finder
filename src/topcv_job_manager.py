@@ -174,7 +174,7 @@ class TopCVJobManager:
         try:
             job.company = (
                 job_data.find("div", class_="job-detail__company--information")
-                .find("h2", class_="company-name-label")
+                .find("div", class_="company-name-label")
                 .find("a")
                 .get_text()
                 .strip()
