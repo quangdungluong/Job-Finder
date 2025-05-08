@@ -64,6 +64,11 @@ class ITViecJobManager:
                     job_page_number += 1
                     next_job_page_url = self.next_job_page(position, job_page_number)
                     job_sub_list, is_last_page = self.read_jobs(next_job_page_url)
+                    job_sub_list = [
+                        job
+                        for job in job_sub_list
+                        if not self.is_blacklisted(job.company, job.title)
+                    ]
                     job_list.extend(job_sub_list)
             except Exception as e:
                 logger.error(e)
@@ -181,3 +186,15 @@ class ITViecJobManager:
             "section", class_=lambda x: x and "job-content" in x
         )
         job.description = job_content_section.text.strip()
+
+    def is_blacklisted(self, company, job_title):
+        company_blacklisted = any(
+            re.search(pattern, company, re.IGNORECASE)
+            for pattern in self.company_blacklist_patterns
+        )
+        title_blacklisted = any(
+            re.search(pattern, job_title, re.IGNORECASE)
+            for pattern in self.title_blacklist_patterns
+        )
+        is_blacklisted = company_blacklisted or title_blacklisted
+        return is_blacklisted
