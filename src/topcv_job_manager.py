@@ -1,6 +1,7 @@
 import random
 import re
 import time
+import traceback
 import urllib
 import urllib.parse
 from datetime import date
@@ -67,14 +68,10 @@ class TopCVJobManager:
                     job_page_number += 1
                     next_job_page_url = self.next_job_page(position, job_page_number)
                     job_sub_list, last_page = self.read_jobs(next_job_page_url)
-                    job_sub_list = [
-                        job
-                        for job in job_sub_list
-                        if not self.is_blacklisted(job.company, job.title)
-                    ]
                     job_list.extend(job_sub_list)
             except Exception as e:
                 logger.error(e)
+                traceback.print_exc()
                 pass
 
         logger.info(f"Number of extracted jobs: {len(job_list)}")
