@@ -38,13 +38,6 @@ class JobManager:
         self.company_blacklist: List = parameters.get("company_blacklist", [])
         self.base_search_url = self.get_base_search_url(parameters)
 
-        self.title_blacklist_patterns = generate_regex_patterns_for_blacklisting(
-            self.title_blacklist
-        )
-        self.company_blacklist_patterns = generate_regex_patterns_for_blacklisting(
-            self.company_blacklist
-        )
-
     def get_base_search_url(self, parameters: Dict):
         url_parts = []
         # Sort by date
@@ -318,14 +311,16 @@ class JobManager:
 
     def is_blacklisted(self, company, job_title):
         company_blacklisted = any(
-            re.search(pattern, company, re.IGNORECASE)
-            for pattern in self.company_blacklist_patterns
+            re.search(rf"^{re.escape(pattern)}$", company, re.IGNORECASE)
+            for pattern in self.company_blacklist
         )
         title_blacklisted = any(
-            re.search(pattern, job_title, re.IGNORECASE)
-            for pattern in self.title_blacklist_patterns
+            re.search(rf"^{re.escape(pattern)}$", job_title, re.IGNORECASE)
+            for pattern in self.title_blacklist
         )
         is_blacklisted = company_blacklisted or title_blacklisted
+        if is_blacklisted:
+            logger.info(f"Blacklist: Job {job_title} at {company}.")
         return is_blacklisted
 
     def is_expired(self, job: Job):
