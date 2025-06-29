@@ -13,4 +13,4 @@ configs/work_preferences.yaml
 configs/secrets.yaml
 Default
 .env
-mysql_data/
+postgres_data/

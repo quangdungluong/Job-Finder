@@ -1,17 +1,16 @@
 version: '3.8'
 
 services:
-  mysql:
-    image: mysql:latest
-    container_name: job-finder-mysql
+  postgres:
+    container_name: job-finder-postgres
+    image: postgres:latest
     restart: always
     environment:
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
-      MYSQL_USER: ${MYSQL_USER}
-      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
-      MYSQL_ALLOW_EMPTY_PASSWORD: "no"
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_PORT: ${POSTGRES_PORT}
     ports:
-      - "3306:3306"
+      - ${POSTGRES_PORT}:5432
     volumes:
-      - ../mysql_data:/var/lib/mysql
-    command: --skip-log-bin --skip-name-resolve
+      - ../postgres_data:/var/lib/postgresql/data
