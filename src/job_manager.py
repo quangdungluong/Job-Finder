@@ -279,7 +279,7 @@ class JobManager:
         except NoSuchElementException:
             tb_str = traceback.format_exc()
             # raise Exception(f"Job Description not found:\nTraceback:\n{tb_str}")
-            logger.warning(tb_str)
+            # logger.warning(tb_str)
         except Exception:
             tb_str = traceback.format_exc()
             logger.error(f"Error getting Job Description:\nTraceback:\b{tb_str}")
@@ -311,11 +311,11 @@ class JobManager:
 
     def is_blacklisted(self, company, job_title):
         company_blacklisted = any(
-            re.search(rf"^{re.escape(pattern)}$", company, re.IGNORECASE)
+            re.search(rf"\b{re.escape(pattern)}\b", company, re.IGNORECASE)
             for pattern in self.company_blacklist
         )
         title_blacklisted = any(
-            re.search(rf"^{re.escape(pattern)}$", job_title, re.IGNORECASE)
+            re.search(rf"\b{re.escape(pattern)}\b", job_title, re.IGNORECASE)
             for pattern in self.title_blacklist
         )
         is_blacklisted = company_blacklisted or title_blacklisted

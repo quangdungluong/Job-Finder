@@ -9,23 +9,22 @@ from tqdm import tqdm
 from main import ConfigValidator
 from src.logger import logger
 from src.models import JobListing, session
-from src.regex_utils import generate_regex_patterns_for_blacklisting
 
 
 def is_title_blacklisted(job_title, title_blacklist_patterns):
-    is_blacklisted = any(
-        re.search(rf"^{re.escape(pattern)}$", job_title, re.IGNORECASE)
-        for pattern in title_blacklist_patterns
-    )
-    return is_blacklisted
+    for pattern in title_blacklist_patterns:
+        if re.search(rf"\b{re.escape(pattern)}\b", job_title, re.IGNORECASE):
+            logger.info(f"Title: {job_title} matched pattern: '{pattern}'")
+            return True
+    return False
 
 
 def is_company_blacklisted(company, company_blacklist_patterns):
-    is_blacklisted = any(
-        re.search(rf"^{re.escape(pattern)}$", company, re.IGNORECASE)
-        for pattern in company_blacklist_patterns
-    )
-    return is_blacklisted
+    for pattern in company_blacklist_patterns:
+        if re.search(rf"\b{re.escape(pattern)}\b", company, re.IGNORECASE):
+            logger.info(f"Company: {company} matched pattern: '{pattern}'")
+            return True
+    return False
 
 
 def clean_blacklist():

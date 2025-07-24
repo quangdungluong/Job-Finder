@@ -33,7 +33,7 @@ def run_job_crawler():
         secrets_file = "./configs/secrets.yaml"
         parameters = ConfigValidator.validate_config(config_file)
         secrets = ConfigValidator.validate_secrets(secrets_file)
-        logger.info(parameters)
+        # logger.info(parameters)
 
         if "LinkedIn" in parameters["job_sources"]:
             # Init browser
