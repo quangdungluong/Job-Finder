@@ -159,12 +159,10 @@ class ITViecJobManager:
                 "a", class_="text-rich-grey", target="_blank"
             ).text.strip()
             job.job_key = job_element.get("data-job-key")
-            location_divs = job_element.find_all(
-                "div", class_="d-flex align-items-center text-dark-grey imt-1"
-            )
-            for div in location_divs:
-                if div.find("use", href=lambda x: x and "map-pin" in x):
-                    job.location = div.find("span").text.strip()
+            job.location = job_element.find(
+                "div",
+                class_="text-rich-grey text-truncate text-nowrap stretched-link position-relative",
+            ).text.strip()
             job_list.append(job)
 
         return job_list, is_last_page

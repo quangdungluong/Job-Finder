@@ -151,21 +151,8 @@ class TopCVJobManager:
             job_list.append(Job(link=job_link))
         return job_list, last_page
 
-    def _get_job_description(self, job: Job):
-        time.sleep(random.uniform(7, 10))
-        job_response = self.scraper.get(job.link)
-        retry_cnt = 5
-        while job_response.status_code == 429 and retry_cnt:
-            logger.info("Retrying..")
-            time.sleep(random.uniform(7, 10))
-            job_response = self.scraper.get(job.link)
-            retry_cnt -= 1
-        if job_response.status_code != 200:
-            logger.error(f"Error: {job_response.status_code}")
-            return
-        job_soup = BeautifulSoup(job_response.text, "lxml")
+    def _handle_regular_job(self, job: Job, job_soup: BeautifulSoup):
         job_data = job_soup.find("div", class_="job-detail__body")
-
         try:
             job.title = (
                 job_data.find("h1", class_="job-detail__info--title").get_text().strip()
@@ -220,10 +207,6 @@ class TopCVJobManager:
             job_description_content = job_data.find("div", "job-description").find_all(
                 "div", class_="job-description__item"
             )
-            # job_description_content_text = [
-            #     item.text.strip().replace("\u00a0", "").replace("\u200b", "") + " "
-            #     for item in job_description_content
-            # ]
             job_description_content_text = []
             for item in job_description_content:
                 paragraphs = item.text.split("\n\n")
@@ -235,6 +218,23 @@ class TopCVJobManager:
             job.description = "\n".join(job_description_content_text)
         except AttributeError:
             logger.warning("Job description is missing")
+
+    def _get_job_description(self, job: Job):
+        if "/brand/" in job.link:
+            return
+        time.sleep(random.uniform(3, 5))
+        job_response = self.scraper.get(job.link)
+        retry_cnt = 5
+        while job_response.status_code == 429 and retry_cnt:
+            logger.info("Retrying..")
+            time.sleep(random.uniform(7, 10))
+            job_response = self.scraper.get(job.link)
+            retry_cnt -= 1
+        if job_response.status_code != 200:
+            logger.error(f"Error: {job_response.status_code}")
+            return
+        job_soup = BeautifulSoup(job_response.text, "lxml")
+        self._handle_regular_job(job, job_soup)
 
     def is_blacklisted(self, company, job_title):
         company_blacklisted = any(
