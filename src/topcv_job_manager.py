@@ -15,7 +15,6 @@ from tqdm import tqdm
 from src.job import Job
 from src.logger import logger
 from src.models import JobListing, JobSource, session
-from src.regex_utils import generate_regex_patterns_for_blacklisting
 from src.utils import standardize_location
 
 
@@ -29,13 +28,6 @@ class TopCVJobManager:
         self.locations: List = parameters.get("locations", [])
         self.title_blacklist: List = parameters.get("title_blacklist", [])
         self.company_blacklist: List = parameters.get("company_blacklist", [])
-
-        self.title_blacklist_patterns = generate_regex_patterns_for_blacklisting(
-            self.title_blacklist
-        )
-        self.company_blacklist_patterns = generate_regex_patterns_for_blacklisting(
-            self.company_blacklist
-        )
 
     def retrieve_job_details(self):
         job_records = (
@@ -68,6 +60,11 @@ class TopCVJobManager:
                     job_page_number += 1
                     next_job_page_url = self.next_job_page(position, job_page_number)
                     job_sub_list, last_page = self.read_jobs(next_job_page_url)
+                    job_sub_list = [
+                        job
+                        for job in job_sub_list
+                        if not self.is_blacklisted(job.company, job.title)
+                    ]
                     job_list.extend(job_sub_list)
             except Exception as e:
                 logger.error(e)
@@ -146,9 +143,28 @@ class TopCVJobManager:
         else:
             last_page = 1
         job_list: List[Job] = []
-        for job in jobs:
-            job_link = job.find("h3", class_="title").find("a").get("href")
-            job_list.append(Job(link=job_link))
+        for job_element in jobs:
+            job = Job()
+            job.link = job_element.find("h3", class_="title").find("a").get("href")
+            try:
+                job.title = job_element.select_one(
+                    "h3.title a span[data-toggle='tooltip']"
+                ).get_text(strip=True)
+            except Exception:
+                pass
+            try:
+                job.company = job_element.select_one(
+                    "a.company span.company-name"
+                ).get_text(strip=True)
+            except Exception:
+                pass
+            try:
+                job.location = job_element.select_one(
+                    "label.address span.city-text"
+                ).text
+            except Exception:
+                pass
+            job_list.append(job)
         return job_list, last_page
 
     def _handle_regular_job(self, job: Job, job_soup: BeautifulSoup):
@@ -238,12 +254,14 @@ class TopCVJobManager:
 
     def is_blacklisted(self, company, job_title):
         company_blacklisted = any(
-            re.search(pattern, company, re.IGNORECASE)
-            for pattern in self.company_blacklist_patterns
+            re.search(rf"\b{re.escape(pattern)}\b", company, re.IGNORECASE)
+            for pattern in self.company_blacklist
         )
         title_blacklisted = any(
-            re.search(pattern, job_title, re.IGNORECASE)
-            for pattern in self.title_blacklist_patterns
+            re.search(rf"\b{re.escape(pattern)}\b", job_title, re.IGNORECASE)
+            for pattern in self.title_blacklist
         )
         is_blacklisted = company_blacklisted or title_blacklisted
+        if is_blacklisted:
+            logger.info(f"Blacklist: Job {job_title} at {company}.")
         return is_blacklisted
